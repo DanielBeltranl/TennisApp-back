@@ -6,5 +6,6 @@ router = routers.DefaultRouter()
 router.register(r'usuarios', views.UsuarioViewSet)
 
 urlpatterns = [
-    path('', include(router.urls))
+    path('', include(router.urls)),
+    path('token/', views.TokenObtainPairViewPersonalizado.as_view(), name='token_obtain_pair'),
 ]

@@ -1,4 +1,5 @@
 from rest_framework import serializers
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from .models import Usuario
 
 class UsuarioSerializer(serializers.ModelSerializer):
@@ -13,3 +14,22 @@ class UsuarioSerializer(serializers.ModelSerializer):
     
     def create(self, validated_data):
         return Usuario.objects.create_user(**validated_data)
+
+
+class TokenObtainPairSerializerPersonalizado(TokenObtainPairSerializer):
+    """
+    Serializer personalizado que usa 'correo' en lugar de 'username'
+    """
+    username_field = 'correo'
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['correo'] = self.fields.pop('username')
+    
+    @classmethod
+    def get_token(cls, user):
+        token = super().get_token(user)
+        # Agregar datos personalizados al token
+        token['correo'] = user.correo
+        token['nombre'] = user.nombre
+        return token

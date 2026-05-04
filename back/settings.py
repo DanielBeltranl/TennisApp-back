@@ -135,6 +135,9 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 
 SIMPLE_JWT = {
+    'SIGNING_KEY': SECRET_KEY,
+    'ALGORITHM': 'HS256',
+    'USER_ID_FIELD': 'id',
     'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60), # El token dura 1 hora
     'REFRESH_TOKEN_LIFETIME': timedelta(days=1),    # El refresh dura 1 día
     'AUTH_HEADER_TYPES': ('Bearer',),               # Se envía como "Bearer <token>"
