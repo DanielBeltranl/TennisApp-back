@@ -43,3 +43,21 @@ class Usuario(AbstractBaseUser):
 
     def __str__(self):
         return self.correo
+
+
+
+class TokenSession(models.Model):
+    usuario = models.ForeignKey(Usuario, on_delete=models.CASCADE, related_name='token_sessions')
+    access_token = models.TextField()
+    refresh_token = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField()  # Cuando expira el access token
+    is_active = models.BooleanField(default=True)
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    user_agent = models.CharField(max_length=255, null=True, blank=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.usuario.correo} - {self.created_at}"

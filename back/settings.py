@@ -6,8 +6,7 @@ from dotenv import load_dotenv
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
-
-
+load_dotenv()
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
@@ -42,7 +41,8 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework',
     'apiusuario',
-    'corsheaders',   
+    'corsheaders',  
+    'matches', 
 ]
 
 MIDDLEWARE = [
@@ -134,6 +134,9 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 
 SIMPLE_JWT = {
+    'SIGNING_KEY': SECRET_KEY,
+    'ALGORITHM': 'HS256',
+    'USER_ID_FIELD': 'id',
     'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60), # El token dura 1 hora
     'REFRESH_TOKEN_LIFETIME': timedelta(days=1),    # El refresh dura 1 día
     'AUTH_HEADER_TYPES': ('Bearer',),               # Se envía como "Bearer <token>"
