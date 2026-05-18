@@ -1,0 +1,24 @@
+﻿N°,Nombre,Descripción,Criterios de Aceptación (Nivel Senior)
+1,Menu principal,"Como usuario, quiero acceder a un menu/hub donde se concentren todas las opciones del sistema para acceder aq cada una de ellas","1. Indicador de acceso para la creación de sesión, el panel de estadisticas (historial de partidos), y perfil."
+2,Panel de estadistica,"Como entrenador/usuario, quiero acceder a un panel unico de estadisticas para recabar datos de la sesión","1. Indicador de acceso al panel de estadisticas. 
+
+2. El sistema debe mostrar en pantalla:
+
+- Puntos por minuto
+- Distancia por tiempo
+- Distribucion porcentual de efectividad por rango de tiempo.
+- Duración media del punto ganado
+- Duración media del punto perdido
+- Procentaje de victorias/derrotas
+- Porcentaje de puntos ganados/perdidos
+- Duración del partido
+- Efectividad en break points
+- Break Points perdidos
+- Distancia total recorrida
+
+3 .- Toda la estadistica debe ser accecible desde un perfil personal o por cada partido
+
+4. En el caso de no haber estadisticas o un error, mostrar un mensaje claro."
+3,Historial de partido,"Como entrenador/jugador, quiero ver todos los partidos listads para acceder a la estadistica especifica de cada uno.","1. Indicador de acceso al historial de partidos.
+2. Se debe mostrar la lista de partidos, indicando lugar, fecha, tipo de cancha.
+3. Al hacer click sobre uno, se debe mostrar la estadistica del partido especifico."

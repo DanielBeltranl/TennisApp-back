@@ -1,0 +1,50 @@
+﻿N°,Nombre,Descripción,Criterios de Aceptación (Nivel Senior)
+1,Gráfico: Puntos por rango de tiempo,"Como entrenador/jugador, quiero visualizar una línea de tendencia de puntos ganados en intervalos de 5 minutos para analizar el rendimiento técnico durante el partido.","1. El backend debe agrupar puntos ganados en intervalos de 5 min (5,10,15,20).
+
+2. El sistema debe generar un Eje Y (Puntos) y un Eje X (Tiempo).
+
+3. La línea de tendencia debe representar el promedio de puntos ganados en cada intervalo durante el total del partido."
+2,Gráfico: Distancia por rango de tiempo,"Como entrenador/jugador, quiero ver un gráfico de distancia recorrida en intervalos de 5 minutos para evaluar el desgaste físico.","1. El sistema debe calcular la distancia recorrida en funcion del nivel del jugador y la distancia recorrida.
+
+2. El sistema debe generar un Eje Y (Metros) y un Eje X (Tiempo, intervalos d 5 min(5,10,15,20).
+
+3. Se debe dibujar una linea de tendencia que se construya a partir del promedio recorrido por cada intervalo en metros"
+3,Rangos de Puntuación (Cuartiles),"Como entrenador/jugador, quiero identificar la duración de los puntos extremos para estudiar el comportamiento en diferentes rango de duración de un punto.","1. El sistema debe encontrar el punto de menor y mayor duración de la sesión.
+
+2. Los puntos deben segmentarse y clasificarse en cuartiles basados en su duración.
+
+3. Los cuartiles usaran colores verde, amarillo, naranjo y rojo desde el cuartil de mayor efectividad, hasta el de menor efectividad
+
+4.- se debe mostrar a que porcentaje de los puntos totales corresponde el cuartil."
+4,Duración Media: Punto Ganado,"Como entrenador/jugador, quiero conocer el tiempo promedio invertido en ganar puntos para ajustar la táctica.","1. Filtrado exclusivo de puntos donde el usuario fue ganador.
+
+2. Cálculo del promedio simple de duración de dichos registros.
+
+3. El dato debe presentarse en formato mm:ss. (Truncado)"
+5,Duración Media: Punto Perdido,"Como entrenador/jugador, quiero analizar cuánto tiempo resisto en los puntos perdidos para trabajar la defensa.","1. Filtrado exclusivo de puntos donde el usuario perdió el punto.
+
+2. Cálculo del promedio simple de duración de dichos registros.
+
+3. El dato debe presentarse en formato mm:ss. (Truncado)"
+6,Porcentaje de puntos W/L,"Como entrenador/jugador, quiero ver mi efectividad porcentual de puntos ganados vs. perdidos en el partido  para establecer mi nivel de dominio en un partido","1. Cálculo: (Puntos Ganados / Total de Puntos) * 100.
+
+2. El sistema debe mostrar el conteo total numérico de ambos indicadores en un formato GG/PP y GG%/PP%."
+7,Récord Histórico (V/D),"Como entrenador/jugador, quiero ver mi acumulado total de victorias y derrotas en mi perfil para determinar si el jugador mejora, empeora o es irregular.","1. El sistema debe sumar todas las sesiones finalizadas con estado ""Ganador"" y ""Perdedor"".
+
+2. El dato debe ser global (acumulado de todos los partidos registrados).
+
+3.- Los datos se deben presentar en formato GG/PP Y y GG%/PP%."
+8,Duración Total del Partido,"Como usuario, quiero saber el tiempo exacto que duró la sesión de juego para determinar la carga fisica externa que significo el partido.","1. Cálculo de la diferencia entre el timestamp de inicio del primer punto y el fin del último punto.
+
+2. Persistencia del dato como metadato estático del partido.
+
+3.- El dato debe presentarse  en formato HH:MM:SS"
+9,Break Points Ganados vs Generados,"Como entrenador/jugador, quiero medir mi efectividad ofensiva en situaciones de quiebre para orientar con mayor certeza el trabajo tactico .","1. Identificación automática de situaciones de BP generadas por el receptor.
+
+2. Cálculo del porcentaje de conversión de dichos puntos."
+10,Break Points Concedidos vs Perdidos,"Como entrenador/jugador, quiero analizar mi capacidad de salvar puntos de quiebre bajo presión para orientar con mayor certeza el trabajo tactico .","1. Identificación automática de situaciones de BP enfrentadas por el servidor.
+
+2. Cálculo del porcentaje de puntos de quiebre salvados."
+11,Distancia Total Recorrida,"Como entrenador/jugador, quiero cuantificar la carga de trabajo física total del encuentro.","1. El algoritmo determinara la carga mediante una formula a definir.
+.
+2. Dicho resultado, sera expresado con maximo 2 decimales."
