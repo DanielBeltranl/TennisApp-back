@@ -1,0 +1,37 @@
+﻿N°,Nombre,Descripción,Criterios de Aceptación
+1,Registro de Usuario,"Como usuario, quiero registrarme en la aplicación para que los datos generados queden asociados a mi cuenta.","
+2. El sistema debe permitir asignar roles: Entrenador, Amateur, Semi-pro o Profesional.
+
+1.En el caso de ser deportista, el sistema debe validar campos obligatorios: Nombre, Apellidos, Correo, Password, Sexo, Edad, Altura y Peso.
+
+3.- En el caso de ser entrenador, sus datos obligatorios deben ser: Nombre, apellido, Correo, Contraseña, Edad, Lugar prioncipal de trabajo
+
+3. El sistema debe soportar la carga de una foto de perfil.
+
+4. Persistencia en BD con UUID privado e ID público único."
+2,Visualización de perfil,"Como usuario, quiero poder acceder a mi perfil para revisar los datos ingresados","1. El sistema debe recuperar y precargar los datos vigentes desde la BD.
+
+2. El sistema debe mostrar los datos en formato nombre/dato
+
+3. Si el usuario tiene foto, el sistema debe mostrar su foto"
+3,Modificación de Perfil,"Como usuario, quiero modificar mi información para mantener mis datos actualizados para evitar malas lecturas o calculos del sistema.","1. El sistema debe recuperar y precargar los datos vigentes desde la BD.
+
+2. El sistema debe solicitar confirmación antes de impactar los cambios.
+
+3. Al guardar, el sistema debe refrescar la información en todas las vistas dependientes."
+4,Gestión de Amistades,"Como usuario, quiero agregar amigos para habilitar funciones sociales y competitivas.","1. Búsqueda por Nombre de Usuario (coincidencia parcial) o ID Público (exacto).
+
+2. El sistema debe validar que no exista una relación previa antes de enviar la solicitud.
+
+3. Generación de notificación de sistema para el usuario receptor."
+5,Centro de Notificaciones,"Como usuario, quiero recibir avisos centralizados para gestionar eventos de manera ordenada.","1. Listado de eventos: Partidos (creados/finalizados), Solicitudes de amistad y Grupos.
+
+2. El sistema debe actualizar el estado de la notificación a ""Resuelta"" tras la interacción del usuario."
+6,Panel de Gestión de Amigos,"Como usuario, quiero visualizar mi lista de contactos para gestionar mis vínculos sociales.","1. El sistema debe listar todos los contactos aceptados con su información básica.
+
+2. Opción de eliminación de vínculo con actualización inmediata de la lista de amigos."
+7,Vsta de login,"Como usuario, quiero ingresar a mi cuenta para acceder a las funcionalidades","1. Se debe mostar un panel con campos para el email y la contraseña, esta ultima, con los caracteres incriptados
+
+2. Boton para enviar el formulario
+
+3. Mensaje de error en caso de que las credenciales sean erroneas"

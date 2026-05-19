@@ -1,0 +1,22 @@
+﻿N°,Nombre,Descripción,Criterios de Aceptación
+1,Registro de Puntuación,"Como controlador, quiero aumentar la puntuación de manera simple para llevar el control exacto del marcador.","1. Implementación de secuencia lógica: 0, 15, 30, 40, AD.
+
+2. Gestión automática de estados de ""Deuce"" e ""Iguales"".
+
+3. Función de decremento (Undo) para corrección de errores en el ingreso de puntos."
+2,Persistencia de Datos,"Como entrenador/jugador, quiero que el sistema guarde el progreso detallado para consultas futuras.","1. Persistencia atómica de cada punto, game y set vinculados a un ID de sesión.
+
+2. El sistema debe manejar estados: Empezado, En curso, Finalizado.
+
+3. Validación de cierre de sesión manual con cambio de estado a ""Terminado""."
+3,Medidas de Tiempo,"Como entrenador/jugador, quiero registrar tiempos seccionados para evaluar el ritmo de juego.","1. El sistema debe capturar la marca de tiempo (timestamp) de inicio y fin de cada Game, Set y Partido.
+
+2. Cálculo de duración total de la sesión al finalizar el encuentro."
+4,Transmisión en Vivo,"Como espectador, quiero acceder a una sesión de juego para seguir el marcador remotamente.","1. Generación de identificador único (Código/QR) por sesión activa.
+
+2. Vista restringida de ""Solo Lectura"" para usuarios invitados.
+
+3. Sincronización de estadísticas de partido en tiempo real."
+5,Registro de Historial (Log),"Como usuario, quiero un historial detallado de la sesión para auditoría técnica del partido.","1. El sistema debe estructurar los datos en jerarquía: Sesión > Información > Sets > Games.
+
+2. El registro de cada Game debe incluir: Puntajes, Jugador en Servicio, indicador de Quiebre (Break) y Ganador."

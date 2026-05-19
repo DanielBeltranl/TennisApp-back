@@ -1,0 +1,15 @@
+﻿N°,Nombre,Descripción,Criterios de Aceptación (Nivel Senior)
+1,Crear Sesión de Juego (Agendamiento),"Como organizador, quiero programar partidos para que el sistema vincule automáticamente las métricas a los perfiles de cada jugador involucrado.","1. El sistema debe permitir la selección de modalidad (1, 3 o 5 sets).
+
+2. El sistema debe validar que los participantes existan en la base de datos (vía lista de amigos o miembros de grupo).
+
+3. Al crear la sesión, el sistema debe inicializar un objeto ""Marcador"" con estado SCHEDULED.
+
+4. El sistema debe disparar notificaciones de confirmación; la sesión no cambiará a IN_PROGRESS hasta que los jugadores acepten."
+2,Gestión de Grupos Privados,"Como administrador de grupo, quiero crear comunidades cerradas para llevar un control centralizado del progreso de mis alumnos o amigos.","1. El sistema debe permitir la creación de una entidad ""Grupo"" con un nombre único y un Owner (Dueño).
+
+2. El sistema debe permitir la gestión de miembros (Alta/Baja) mediante búsqueda por ID público.
+
+3. El sistema debe generar un Ranking Automático calculado en base al ratio de victorias/derrotas de los partidos jugados dentro del grupo.
+
+4. Los miembros del grupo deben tener permisos de ""Solo Lectura"" para consultar el ranking en tiempo real."
