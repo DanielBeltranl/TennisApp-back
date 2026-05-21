@@ -13,10 +13,34 @@ from .models import Usuario, TokenSession
 
 
 class TokenObtainPairViewPersonalizado(TokenObtainPairView):
-    """
-    Vista personalizada para obtener tokens JWT usando 'correo' en lugar de 'username'
-    """
     serializer_class = TokenObtainPairSerializerPersonalizado
+
+    def post(self, request, *args, **kwargs):
+        response = super().post(request, *args, **kwargs)
+
+        if response.status_code == 200:
+            access_str = response.data.get('access')
+            refresh_str = response.data.get('refresh')
+
+            from rest_framework_simplejwt.tokens import AccessToken
+            user_id = AccessToken(access_str).get('user_id')
+
+            try:
+                usuario = Usuario.objects.get(id=user_id)
+                TokenSession.objects.filter(usuario=usuario, is_active=True).update(is_active=False)
+                TokenSession.objects.create(
+                    usuario=usuario,
+                    access_token=access_str,
+                    refresh_token=refresh_str,
+                    expires_at=timezone.now() + api_settings.ACCESS_TOKEN_LIFETIME,
+                    ip_address=request.META.get('REMOTE_ADDR'),
+                    user_agent=request.META.get('HTTP_USER_AGENT', '')[:255],
+                    is_active=True,
+                )
+            except Usuario.DoesNotExist:
+                pass
+
+        return response
 
 
 class UsuarioViewSet(viewsets.ModelViewSet):
@@ -26,200 +50,84 @@ class UsuarioViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['post'], permission_classes=[AllowAny])
     def registro(self, request):
-        """
-        Endpoint para registrar un nuevo usuario
-        Acepta: nombre, apellidoPaterno, apellidoMaterno, correo, password, edad, altura, peso, sexo, nivelUsuario
-        Retorna: usuario creado + tokens JWT
-        """
         serializer = self.get_serializer(data=request.data)
-        if serializer.is_valid():
-            usuario = serializer.save()
-            
-            # Generar tokens JWT para el usuario nuevo
-            refresh = TokenObtainPairSerializerPersonalizado.get_token(usuario)
-            access_token_str = str(refresh.access_token)
-            refresh_token_str = str(refresh)
-            
-            # Validar que los tokens no existan para otro usuario (protección contra duplicados)
-            if TokenSession.objects.filter(access_token=access_token_str, is_active=True).exclude(usuario=usuario).exists():
-                return Response(
-                    {'error': 'Error de generación de token. Intenta registrarte de nuevo.'},
-                    status=status.HTTP_500_INTERNAL_SERVER_ERROR
-                )
-            
-            # Guardar token en base de datos
-            access_token_lifetime = api_settings.ACCESS_TOKEN_LIFETIME
-            expires_at = timezone.now() + access_token_lifetime
-            ip_address = self.request.META.get('REMOTE_ADDR')
-            user_agent = self.request.META.get('HTTP_USER_AGENT', '')
-            
-            TokenSession.objects.create(
-                usuario=usuario,
-                access_token=access_token_str,
-                refresh_token=refresh_token_str,
-                expires_at=expires_at,
-                ip_address=ip_address,
-                user_agent=user_agent[:255],
-                is_active=True
-            )
-            
-            return Response({
-                'usuario': UsuarioSerializer(usuario).data,
-                'access': access_token_str,
-                'refresh': refresh_token_str,
-                'mensaje': 'Usuario registrado exitosamente'
-            }, status=status.HTTP_201_CREATED)
-        
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    @action(detail=False, methods=['post'], permission_classes=[AllowAny])
-    def login(self, request):
-        """
-        Obtener tokens JWT con correo y contraseña
-        Acepta: correo, password
-        Retorna: access token, refresh token y datos del usuario
-        """
-        correo = request.data.get('correo')
-        password = request.data.get('password')
-        
-        if not correo or not password:
-            return Response(
-                {'error': 'Se requieren correo y password'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-        
-        try:
-            usuario = Usuario.objects.get(correo=correo)
-        except Usuario.DoesNotExist:
-            return Response(
-                {'error': 'Credenciales inválidas'},
-                status=status.HTTP_401_UNAUTHORIZED
-            )
-        
-        if not usuario.check_password(password):
-            return Response(
-                {'error': 'Credenciales inválidas'},
-                status=status.HTTP_401_UNAUTHORIZED
-            )
-        
-        if not usuario.is_active:
-            return Response(
-                {'error': 'El usuario está desactivado'},
-                status=status.HTTP_403_FORBIDDEN
-            )
-        
-        # Desactivar sesiones previas del usuario (logout de otros dispositivos)
-        TokenSession.objects.filter(usuario=usuario, is_active=True).update(is_active=False)
-        
-        # Generar tokens JWT
-        refresh = TokenObtainPairSerializerPersonalizado.get_token(usuario)
-        access_token_str = str(refresh.access_token)
-        refresh_token_str = str(refresh)
-        access_token_lifetime = api_settings.ACCESS_TOKEN_LIFETIME
-        expires_at = timezone.now() + access_token_lifetime
-        
-        # Validar que los tokens no existan para otro usuario
-        if TokenSession.objects.filter(access_token=access_token_str, is_active=True).exclude(usuario=usuario).exists():
-            return Response(
-                {'error': 'Error de generación de token. Intenta login de nuevo.'},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
-        
-        # Obtener IP y User-Agent
-        ip_address = self.request.META.get('REMOTE_ADDR')
-        user_agent = self.request.META.get('HTTP_USER_AGENT', '')
-        
-        # Guardar token en base de datos
+        usuario = serializer.save()
+
+        refresh = RefreshToken.for_user(usuario)
+        access_str = str(refresh.access_token)
+        refresh_str = str(refresh)
+
         TokenSession.objects.create(
             usuario=usuario,
-            access_token=access_token_str,
-            refresh_token=refresh_token_str,
-            expires_at=expires_at,
-            ip_address=ip_address,
-            user_agent=user_agent[:255],
-            is_active=True
+            access_token=access_str,
+            refresh_token=refresh_str,
+            expires_at=timezone.now() + api_settings.ACCESS_TOKEN_LIFETIME,
+            ip_address=request.META.get('REMOTE_ADDR'),
+            user_agent=request.META.get('HTTP_USER_AGENT', '')[:255],
+            is_active=True,
         )
-        
+
         return Response({
             'usuario': UsuarioSerializer(usuario).data,
-            'access': access_token_str,
-            'refresh': refresh_token_str,
-            'mensaje': 'Login exitoso'
-        }, status=status.HTTP_200_OK)
+            'access': access_str,
+            'refresh': refresh_str,
+            'mensaje': 'Usuario registrado exitosamente'
+        }, status=status.HTTP_201_CREATED)
 
     @action(detail=False, methods=['post'], permission_classes=[IsAuthenticated])
     def perfil(self, request):
-        """
-        Obtener el perfil del usuario autenticado
-        """
         serializer = self.get_serializer(request.user)
         return Response(serializer.data)
 
     @action(detail=False, methods=['post'], permission_classes=[IsAuthenticated])
     def cambiar_password(self, request):
-        """
-        Cambiar la contraseña del usuario autenticado
-        Acepta: password_actual, password_nuevo
-        """
         usuario = request.user
         password_actual = request.data.get('password_actual')
         password_nuevo = request.data.get('password_nuevo')
-        
+
         if not password_actual or not password_nuevo:
             return Response(
                 {'error': 'Se requieren password_actual y password_nuevo'},
                 status=status.HTTP_400_BAD_REQUEST
             )
-        
+
         if not usuario.check_password(password_actual):
             return Response(
                 {'error': 'La contraseña actual es incorrecta'},
                 status=status.HTTP_400_BAD_REQUEST
             )
-        
+
         usuario.set_password(password_nuevo)
         usuario.save()
-        
+
         return Response({'mensaje': 'Contraseña cambiada exitosamente'}, status=status.HTTP_200_OK)
 
     @action(detail=False, methods=['post'], permission_classes=[IsAuthenticated])
     def logout(self, request):
-        """
-        Logout: marca el token como inactivo en la base de datos
-        Acepta: access token en header Authorization
-        """
-        token = request.auth
-        
         try:
-            # Obtener el token de la sesión
-            token_session = TokenSession.objects.get(
-                access_token=str(token),
+            session = TokenSession.objects.get(
+                access_token=str(request.auth),
                 usuario=request.user,
-                is_active=True
+                is_active=True,
             )
-            token_session.is_active = False
-            token_session.save()
-            
-            return Response({
-                'mensaje': 'Logout exitoso'
-            }, status=status.HTTP_200_OK)
+            RefreshToken(session.refresh_token).blacklist()
+            session.delete()
+            return Response({'mensaje': 'Logout exitoso'}, status=status.HTTP_200_OK)
         except TokenSession.DoesNotExist:
             return Response(
-                {'error': 'Token no encontrado o ya fue invalidado'},
+                {'error': 'Sesión no encontrada o ya fue cerrada'},
                 status=status.HTTP_404_NOT_FOUND
             )
 
     @action(detail=False, methods=['get'], permission_classes=[IsAuthenticated])
     def sesiones_activas(self, request):
-        """
-        Obtener todas las sesiones activas del usuario autenticado
-        """
         sesiones = TokenSession.objects.filter(
             usuario=request.user,
             is_active=True
-        ).values(
-            'id', 'created_at', 'expires_at', 'ip_address', 'user_agent'
-        )
+        ).values('id', 'created_at', 'expires_at', 'ip_address', 'user_agent')
         return Response({
             'sesiones': sesiones,
             'total': sesiones.count()

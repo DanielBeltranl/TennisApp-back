@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
+    'rest_framework_simplejwt.token_blacklist',
     'apiusuario',
     'corsheaders',
     'matches',
@@ -139,9 +140,11 @@ SIMPLE_JWT = {
     'SIGNING_KEY': SECRET_KEY,
     'ALGORITHM': 'HS256',
     'USER_ID_FIELD': 'id',
-    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60), # El token dura 1 hora
-    'REFRESH_TOKEN_LIFETIME': timedelta(days=1),    # El refresh dura 1 día
-    'AUTH_HEADER_TYPES': ('Bearer',),               # Se envía como "Bearer <token>"
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
+    'AUTH_HEADER_TYPES': ('Bearer',),
+    'ROTATE_REFRESH_TOKENS': True,
+    'BLACKLIST_AFTER_ROTATION': True,
 }
 
 REST_FRAMEWORK = {
