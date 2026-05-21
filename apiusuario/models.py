@@ -39,8 +39,6 @@ class Usuario(AbstractBaseUser):
 
     USERNAME_FIELD = 'correo'
     REQUIRED_FIELDS = ['nombre']
-
-
     def __str__(self):
         return self.correo
 

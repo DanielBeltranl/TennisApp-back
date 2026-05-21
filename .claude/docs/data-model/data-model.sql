@@ -40,7 +40,7 @@ Table match_data {
   surface varchar // Clay, Grass, Hard
   id_match_score uuid [ref: - match_score.id_match_score]
   best_of BestOf
-  match_State INICIADO | PAUSADO | FINALIZADA
+  match_State ACEPTADO | INICIADO | PAUSADO | FINALIZADA
   created_at timestamp
   updated_at timestamp
 }

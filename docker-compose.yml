@@ -1,11 +1,38 @@
 services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_NAME:-tennisapp}
+      POSTGRES_USER: ${DB_USER:-tennisapp}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-tennisapp}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-tennisapp} -d ${DB_NAME:-tennisapp}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
   web:
     build: .
-    network_mode: "host"
+    ports:
+      - "8000:8000"
     env_file:
       - .env
+    environment:
+      DB_HOST: db
+      DB_PORT: "5432"
     volumes:
       - .:/app
+    depends_on:
+      db:
+        condition: service_healthy
     command: >
       sh -c "python manage.py migrate &&
              python manage.py runserver 0.0.0.0:8000"
+
+volumes:
+  postgres_data:

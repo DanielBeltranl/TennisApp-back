@@ -10,6 +10,7 @@ class BestOf(models.IntegerChoices):
 
 
 class MatchState(models.TextChoices):
+    ACEPTADO = 'ACEPTADO'
     INICIADO = 'INICIADO'
     PAUSADO = 'PAUSADO'
     FINALIZADA = 'FINALIZADA'
@@ -22,7 +23,7 @@ class MatchData(models.Model):
     location = models.CharField(max_length=100)
     surface = models.CharField(max_length=50)
     best_of = models.IntegerField(choices=BestOf.choices)
-    match_state = models.CharField(max_length=20, choices=MatchState.choices, default=MatchState.INICIADO)
+    match_state = models.CharField(max_length=20, choices=MatchState.choices, default=MatchState.ACEPTADO)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

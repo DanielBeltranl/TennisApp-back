@@ -42,7 +42,7 @@ Antes de comenzar, asegúrate de tener instalado:
    pip install uv
    ```
 3. **Git** - Control de versiones
-4. **Acceso a Base de Datos PostgreSQL** - Base de datos remota (Supabase) o local
+4. **Acceso a Base de Datos PostgreSQL** - Base de datos local o remota
 
 ---
 
@@ -106,10 +106,10 @@ En la raíz del proyecto, crea un archivo `.env` con las siguientes variables:
 
 ```env
 # Base de Datos PostgreSQL
-DB_NAME=postgres
-DB_USER=postgres
+DB_NAME=your_db_name
+DB_USER=your_db_user
 DB_PASSWORD=tu_contraseña_segura
-DB_HOST=tu_servidor_postgresql.supabase.co
+DB_HOST=localhost
 DB_PORT=5432
 
 # Django Settings
@@ -117,20 +117,6 @@ SECRET_KEY=tu_clave_secreta_django
 DEBUG=True
 ALLOWED_HOSTS=localhost,127.0.0.1
 ```
-
-### Credenciales Compartidas para Desarrollo (Supabase)
-
-> ⚠️ **IMPORTANTE**: Estas credenciales son solo para desarrollo colaborativo. **NUNCA** las compartas en repositorios públicos ni las uses en producción.
-
-```env
-DB_NAME=postgres
-DB_USER=postgres
-DB_PASSWORD=xAUX9HPYBOSAeBVj
-DB_HOST=db.mgpuczrpmhulyfpvulgn.supabase.co
-DB_PORT=5432
-```
-
-**Para conexión en producción**, cambia estas credenciales por unas seguras.
 
 ---
 
@@ -386,13 +372,6 @@ class Usuario(AbstractBaseUser):
 ## 📝 Notas Importantes
 
 ### ⚠️ Seguridad en Desarrollo vs Producción
-
-**DESARROLLO (Archivo `.env` actual):**
-```env
-DB_PASSWORD=xAUX9HPYBOSAeBVj
-SECRET_KEY=django-insecure-9vfjnowh@@jd99%=u%+sxca)gp9(gco490)#u^-b)hslr07(bj)
-DEBUG=True
-```
 
 **PRODUCCIÓN:**
 - Cambia todas las contraseñas
