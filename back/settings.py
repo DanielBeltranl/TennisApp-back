@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     'corsheaders',
     'matches',
     'statistics',
+    'friendship',
 ]
 
 MIDDLEWARE = [
