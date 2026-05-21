@@ -11,7 +11,7 @@
 - Python3
 - Djnago
 - Djando rest framework
-- PostreSQL (Supabase + servicios)
+- PostgreSQL
 - Models (Django orm)
 - JWT
 
@@ -91,7 +91,7 @@
 - Cada vez que recurras a las hiustorias de usuario, usa la informacion relativa al modulo y la informacion del promp que se esta dando, no tomes todas las historias y el contexto completo, solo lo que se te demande.
 - Cada vez que tengas dudas, cuastioname, hazme las preguntas pertinentes y establezcamos una solucion.
 - El codigo se rige por los principios solid. Puedes consultarlos en @.claude/docs/solid-principles/solid-principles.md. Caundo inicie el proyecto, guarda esta orden automaticamente en tu memoria y en engram (de no existir registro)
-
+- Archivos legibles, no kilometricos.
 
 
 
