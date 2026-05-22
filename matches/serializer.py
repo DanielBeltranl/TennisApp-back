@@ -1,6 +1,7 @@
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
-from .models import MatchData, MatchScore, MatchSet, MatchPoint, MatchGame
+from friendship.models import Friendship, FriendshipStatus
+from .models import MatchData, MatchScore, MatchSet, MatchPoint, MatchGame, MatchState
 
 Usuario = get_user_model()
 
@@ -76,17 +77,49 @@ class MatchScoreSerializer(serializers.ModelSerializer):
         read_only_fields = ['id_match_score', 'created_at', 'updated_at']
 
 
+class ScheduleMatchSerializer(serializers.ModelSerializer):
+    id_player_invited = serializers.PrimaryKeyRelatedField(queryset=Usuario.objects.all())
+    creator = UsuarioResumenSerializer(source='id_player_creator', read_only=True)
+    invited = UsuarioResumenSerializer(source='id_player_invited', read_only=True)
+
+    class Meta:
+        model = MatchData
+        fields = [
+            'id_match', 'creator', 'invited', 'id_player_invited',
+            'location', 'surface', 'best_of', 'match_state', 'created_at',
+        ]
+        read_only_fields = ['id_match', 'match_state', 'created_at']
+
+    def validate_id_player_invited(self, invited):
+        creator = self.context['request'].user
+        if invited == creator:
+            raise serializers.ValidationError("No puedes agendarte un partido contra ti mismo.")
+        is_friend = Friendship.objects.filter(
+            user=creator,
+            friend=invited,
+            status=FriendshipStatus.ACEPTADO,
+        ).exists()
+        if not is_friend:
+            raise serializers.ValidationError("El jugador invitado debe ser tu amigo.")
+        return invited
+
+    def create(self, validated_data):
+        validated_data['id_player_creator'] = self.context['request'].user
+        validated_data['match_state'] = MatchState.PENDIENTE
+        return super().create(validated_data)
+
+
 class MatchDataSerializer(serializers.ModelSerializer):
-    player_1 = UsuarioResumenSerializer(read_only=True)
-    player_2 = UsuarioResumenSerializer(read_only=True)
-    player_1_id = serializers.PrimaryKeyRelatedField(source='player_1', queryset=Usuario.objects.all(), write_only=True)
-    player_2_id = serializers.PrimaryKeyRelatedField(source='player_2', queryset=Usuario.objects.all(), write_only=True)
+    creator = UsuarioResumenSerializer(source='id_player_creator', read_only=True)
+    invited = UsuarioResumenSerializer(source='id_player_invited', read_only=True)
+    id_player_creator = serializers.PrimaryKeyRelatedField(queryset=Usuario.objects.all(), write_only=True)
+    id_player_invited = serializers.PrimaryKeyRelatedField(queryset=Usuario.objects.all(), write_only=True)
     score = MatchScoreSerializer(source='match_score', read_only=True)
 
     class Meta:
         model = MatchData
         fields = [
-            'id_match', 'player_1', 'player_2', 'player_1_id', 'player_2_id',
+            'id_match', 'creator', 'invited', 'id_player_creator', 'id_player_invited',
             'location', 'surface', 'best_of', 'match_state',
             'score', 'created_at', 'updated_at',
         ]
