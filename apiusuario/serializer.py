@@ -37,7 +37,8 @@ class TokenObtainPairSerializerPersonalizado(TokenObtainPairSerializer):
     @classmethod
     def get_token(cls, user):
         token = super().get_token(user)
-        # Agregar datos personalizados al token
         token['correo'] = user.correo
         token['nombre'] = user.nombre
+        token['nivelUsuario'] = user.nivelUsuario
+        token['sexo'] = user.sexo
         return token

@@ -76,6 +76,7 @@ class MatchGame(models.Model):
     duration = models.IntegerField(null=True, blank=True)
     winner_id = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='game_wins')
     is_break = models.BooleanField(null=True, blank=True)
+    is_tiebreak = models.BooleanField(default=False)
     is_serving = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='games_serving')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

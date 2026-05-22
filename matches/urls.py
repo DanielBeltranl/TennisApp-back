@@ -16,6 +16,8 @@ from .views import (
     RecoverMatchView,
     MyCreatedMatchesView,
     MyInvitedMatchesView,
+    RegisterPointView,
+    UndoPointView,
 )
 
 router = DefaultRouter()
@@ -36,5 +38,7 @@ urlpatterns = [
     path('<uuid:pk>/resume/', ResumeMatchView.as_view(), name='match-resume'),
     path('<uuid:pk>/finish/', FinishMatchView.as_view(), name='match-finish'),
     path('<uuid:pk>/recovery/', RecoverMatchView.as_view(), name='match-recovery'),
+    path('<uuid:pk>/point/', RegisterPointView.as_view(), name='match-point-register'),
+    path('<uuid:pk>/point/undo/', UndoPointView.as_view(), name='match-point-undo'),
     path('', include(router.urls)),
 ]

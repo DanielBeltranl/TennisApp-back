@@ -152,3 +152,21 @@ REST_FRAMEWORK = {
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     ),
 }
+
+def _f(key, default):
+    return float(os.environ.get(key, default))
+
+TENNIS_DISTANCE_PARAMS = {
+    ('Amateur',     'Clay', 'Masculino'): {'effective': _f('DIST_AMATEUR_CLAY_M_EFF',    '23.0'), 'mpm': _f('DIST_AMATEUR_CLAY_M_MPM',    '28.5')},
+    ('Amateur',     'Clay', 'Femenino'):  {'effective': _f('DIST_AMATEUR_CLAY_F_EFF',    '21.0'), 'mpm': _f('DIST_AMATEUR_CLAY_F_MPM',    '25.0')},
+    ('Amateur',     'Hard', 'Masculino'): {'effective': _f('DIST_AMATEUR_HARD_M_EFF',    '17.0'), 'mpm': _f('DIST_AMATEUR_HARD_M_MPM',    '34.0')},
+    ('Amateur',     'Hard', 'Femenino'):  {'effective': _f('DIST_AMATEUR_HARD_F_EFF',    '13.0'), 'mpm': _f('DIST_AMATEUR_HARD_F_MPM',    '29.0')},
+    ('Semi-Pro',    'Clay', 'Masculino'): {'effective': _f('DIST_SEMIPRO_CLAY_M_EFF',    '31.0'), 'mpm': _f('DIST_SEMIPRO_CLAY_M_MPM',    '36.0')},
+    ('Semi-Pro',    'Clay', 'Femenino'):  {'effective': _f('DIST_SEMIPRO_CLAY_F_EFF',    '28.0'), 'mpm': _f('DIST_SEMIPRO_CLAY_F_MPM',    '31.5')},
+    ('Semi-Pro',    'Hard', 'Masculino'): {'effective': _f('DIST_SEMIPRO_HARD_M_EFF',    '22.0'), 'mpm': _f('DIST_SEMIPRO_HARD_M_MPM',    '43.0')},
+    ('Semi-Pro',    'Hard', 'Femenino'):  {'effective': _f('DIST_SEMIPRO_HARD_F_EFF',    '20.0'), 'mpm': _f('DIST_SEMIPRO_HARD_F_MPM',    '38.0')},
+    ('Profesional', 'Clay', 'Masculino'): {'effective': _f('DIST_PRO_CLAY_M_EFF',        '40.0'), 'mpm': _f('DIST_PRO_CLAY_M_MPM',        '40.0')},
+    ('Profesional', 'Clay', 'Femenino'):  {'effective': _f('DIST_PRO_CLAY_F_EFF',        '35.0'), 'mpm': _f('DIST_PRO_CLAY_F_MPM',        '37.0')},
+    ('Profesional', 'Hard', 'Masculino'): {'effective': _f('DIST_PRO_HARD_M_EFF',        '27.0'), 'mpm': _f('DIST_PRO_HARD_M_MPM',        '48.5')},
+    ('Profesional', 'Hard', 'Femenino'):  {'effective': _f('DIST_PRO_HARD_F_EFF',        '25.0'), 'mpm': _f('DIST_PRO_HARD_F_MPM',        '44.0')},
+}
