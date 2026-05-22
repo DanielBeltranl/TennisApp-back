@@ -34,13 +34,13 @@ Table players {
 
 Table match_data {
   id_match uuid [pk]
-  id_player_1 uuid [ref: > players.id_player]
-  id_player_2 uuid [ref: > players.id_player]
+  id_player_creator uuid [ref: > players.id_player]
+  id_player_invited uuid [ref: > players.id_player]
   location varchar
   surface varchar // Clay, Grass, Hard
   id_match_score uuid [ref: - match_score.id_match_score]
   best_of BestOf
-  match_State ACEPTADO | INICIADO | PAUSADO | FINALIZADA
+  match_State PEDNIENTE |ACEPTADO | INICIADO | PAUSADO | FINALIZADA
   created_at timestamp
   updated_at timestamp
 }

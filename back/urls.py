@@ -11,7 +11,7 @@ from apiusuario.views import TokenObtainPairViewPersonalizado
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/', include('apiusuario.urls')),
-    path('api/', include('matches.urls')),
+    path('api/matches/', include('matches.urls')),
     path('api/', include('statistics.urls')),
     path('api/', include('friendship.urls')),
     path('api/login/', TokenObtainPairViewPersonalizado.as_view(), name='token_obtain_pair'),

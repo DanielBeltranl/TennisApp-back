@@ -10,6 +10,7 @@ class BestOf(models.IntegerChoices):
 
 
 class MatchState(models.TextChoices):
+    PENDIENTE = 'PENDIENTE'
     ACEPTADO = 'ACEPTADO'
     INICIADO = 'INICIADO'
     PAUSADO = 'PAUSADO'
@@ -18,12 +19,13 @@ class MatchState(models.TextChoices):
 
 class MatchData(models.Model):
     id_match = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    player_1 = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='player_1_matches')
-    player_2 = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='player_2_matches')
+    id_player_creator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='creator_matches')
+    id_player_invited = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='invited_matches')
     location = models.CharField(max_length=100)
     surface = models.CharField(max_length=50)
+    id_match_score = models.ForeignKey('MatchScore', on_delete=models.SET_NULL, null=True, blank=True, related_name='match_data_ref')
     best_of = models.IntegerField(choices=BestOf.choices)
-    match_state = models.CharField(max_length=20, choices=MatchState.choices, default=MatchState.ACEPTADO)
+    match_state = models.CharField(max_length=20, choices=MatchState.choices, default=MatchState.PENDIENTE)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -31,14 +33,14 @@ class MatchData(models.Model):
         db_table = 'match_data'
 
     def __str__(self):
-        return f"{self.player_1} vs {self.player_2} at {self.location}"
+        return f"{self.id_player_creator} vs {self.id_player_invited} at {self.location}"
 
 
 class MatchScore(models.Model):
     id_match_score = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     id_partido = models.OneToOneField(MatchData, on_delete=models.CASCADE, related_name='match_score')
-    winner_id = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='match_wins')
-    duration = models.IntegerField()
+    winner_id = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='match_wins')
+    duration = models.IntegerField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -52,11 +54,12 @@ class MatchScore(models.Model):
 class MatchSet(models.Model):
     id_set = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     id_match_score = models.ForeignKey(MatchScore, on_delete=models.CASCADE, related_name='match_sets')
-    score_p1 = models.IntegerField()
-    score_p2 = models.IntegerField()
-    winner_id = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='set_wins')
-    duration = models.IntegerField()
+    score_p1 = models.IntegerField(default=0)
+    score_p2 = models.IntegerField(default=0)
+    winner_id = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='set_wins')
+    duration = models.IntegerField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         db_table = 'match_set'
@@ -68,11 +71,11 @@ class MatchSet(models.Model):
 class MatchGame(models.Model):
     id_game = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     id_set = models.ForeignKey(MatchSet, on_delete=models.CASCADE, related_name='match_games')
-    p1_game_final_score = models.IntegerField()
-    p2_game_final_score = models.IntegerField()
-    duration = models.IntegerField()
-    winner_id = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='game_wins')
-    is_break = models.BooleanField()
+    p1_game_final_score = models.IntegerField(null=True, blank=True)
+    p2_game_final_score = models.IntegerField(null=True, blank=True)
+    duration = models.IntegerField(null=True, blank=True)
+    winner_id = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='game_wins')
+    is_break = models.BooleanField(null=True, blank=True)
     is_serving = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='games_serving')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
