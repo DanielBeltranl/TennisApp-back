@@ -57,6 +57,8 @@ class UsuarioViewSet(viewsets.ModelViewSet):
         usuario = serializer.save()
 
         refresh = RefreshToken.for_user(usuario)
+        refresh['nivelUsuario'] = usuario.nivelUsuario
+        refresh['sexo'] = usuario.sexo
         access_str = str(refresh.access_token)
         refresh_str = str(refresh)
 

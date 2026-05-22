@@ -6,6 +6,16 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from .models import MatchData, MatchScore, MatchSet, MatchPoint, MatchGame, MatchState
+from .services import (
+    advance_score,
+    advance_tiebreak_score,
+    is_break_point_chance,
+    is_break_point,
+    is_set_over,
+    is_match_over,
+    get_next_server,
+    get_tiebreak_server,
+)
 from .serializer import (
     MatchDataSerializer,
     MatchScoreSerializer,
@@ -310,6 +320,279 @@ class MyInvitedMatchesView(APIView):
             id_player_invited=request.user
         ).select_related('id_player_creator', 'id_player_invited').order_by('-created_at')
         return Response(MatchDataSerializer(matches, many=True).data)
+
+
+class RegisterPointView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, pk):
+        try:
+            match = MatchData.objects.select_related(
+                'id_player_creator', 'id_player_invited'
+            ).get(id_match=pk)
+        except MatchData.DoesNotExist:
+            return Response({'error': 'Partido no encontrado.'}, status=status.HTTP_404_NOT_FOUND)
+
+        if request.user.id not in {match.id_player_creator_id, match.id_player_invited_id}:
+            return Response({'error': 'No sos participante de este partido.'}, status=status.HTTP_403_FORBIDDEN)
+
+        if match.match_state != MatchState.INICIADO:
+            return Response({'error': 'El partido no está en curso.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        winner_id = request.data.get('winner_id')
+        duration = request.data.get('duration')
+
+        if not winner_id or duration is None:
+            return Response({'error': 'winner_id y duration son requeridos.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        if int(winner_id) not in {match.id_player_creator_id, match.id_player_invited_id}:
+            return Response({'error': 'El ganador debe ser participante del partido.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            winner = Usuario.objects.get(id=winner_id)
+        except Usuario.DoesNotExist:
+            return Response({'error': 'Jugador no encontrado.'}, status=status.HTTP_404_NOT_FOUND)
+
+        try:
+            match_score = match.match_score
+        except MatchScore.DoesNotExist:
+            return Response({'error': 'El partido no tiene marcador iniciado.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        current_set = MatchSet.objects.filter(
+            id_match_score=match_score, winner_id__isnull=True
+        ).order_by('created_at').last()
+
+        if not current_set:
+            return Response({'error': 'No hay set activo.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        current_game = MatchGame.objects.filter(
+            id_set=current_set, winner_id__isnull=True
+        ).order_by('created_at').last()
+
+        if not current_game:
+            return Response({'error': 'No hay game activo.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        last_point = MatchPoint.objects.filter(
+            id_game=current_game
+        ).order_by('-created_at').first()
+
+        score_p1 = last_point.score_p1 if last_point else '0'
+        score_p2 = last_point.score_p2 if last_point else '0'
+
+        winner_is_creator = (winner.id == match.id_player_creator_id)
+
+        if current_game.is_tiebreak:
+            if winner_is_creator:
+                new_p1, new_p2, game_over = advance_tiebreak_score(score_p1, score_p2)
+            else:
+                new_p2, new_p1, game_over = advance_tiebreak_score(score_p2, score_p1)
+
+            point_index = MatchPoint.objects.filter(id_game=current_game).count()
+            other_player_id = (
+                match.id_player_invited_id
+                if current_game.is_serving_id == match.id_player_creator_id
+                else match.id_player_creator_id
+            )
+            tb_server_id = get_tiebreak_server(current_game.is_serving_id, other_player_id, point_index)
+            point_server = Usuario.objects.get(id=tb_server_id)
+            bp_chance = False
+            bp = False
+        else:
+            if winner_is_creator:
+                new_p1, new_p2, game_over = advance_score(score_p1, score_p2)
+            else:
+                new_p2, new_p1, game_over = advance_score(score_p2, score_p1)
+
+            server_is_creator = (current_game.is_serving_id == match.id_player_creator_id)
+            score_server   = score_p1 if server_is_creator else score_p2
+            score_receiver = score_p2 if server_is_creator else score_p1
+            receiver_won   = (winner_is_creator != server_is_creator)
+
+            bp_chance    = is_break_point_chance(score_server, score_receiver)
+            bp           = is_break_point(score_server, score_receiver, receiver_won)
+            point_server = current_game.is_serving
+
+        response_data = {
+            'game_closed': False,
+            'set_closed': False,
+            'match_closed': False,
+            'tiebreak_required': False,
+        }
+
+        with transaction.atomic():
+            point = MatchPoint.objects.create(
+                id_game=current_game,
+                is_serving=point_server,
+                id_player_1=match.id_player_creator,
+                id_player_2=match.id_player_invited,
+                winner_id=winner,
+                score_p1=new_p1,
+                score_p2=new_p2,
+                duration=int(duration),
+                break_point_chance=bp_chance,
+                break_point=bp,
+            )
+
+            response_data['point'] = MatchPointSerializer(point).data
+            response_data['current_score'] = {'score_p1': new_p1, 'score_p2': new_p2}
+
+            if not game_over:
+                response_data['current_game'] = {'id_game': current_game.id_game, 'is_serving_id': current_game.is_serving_id}
+                response_data['current_set']  = {'score_p1': current_set.score_p1, 'score_p2': current_set.score_p2}
+                return Response(response_data, status=status.HTTP_201_CREATED)
+
+            # — cerrar game —
+            response_data['game_closed'] = True
+
+            if winner_is_creator:
+                current_set.score_p1 += 1
+            else:
+                current_set.score_p2 += 1
+
+            current_game.winner_id         = winner
+            current_game.duration          = int((timezone.now() - current_game.created_at).total_seconds())
+            current_game.p1_game_final_score = current_set.score_p1
+            current_game.p2_game_final_score = current_set.score_p2
+            current_game.is_break          = (current_game.is_serving_id != winner.id)
+            current_game.save()
+
+            set_over, p1_wins_set, tiebreak = is_set_over(current_set.score_p1, current_set.score_p2)
+
+            if tiebreak:
+                current_set.save()
+                next_srv_id = get_next_server(current_game.is_serving_id, match.id_player_creator_id, match.id_player_invited_id)
+                next_srv    = Usuario.objects.get(id=next_srv_id)
+                tb_game     = MatchGame.objects.create(id_set=current_set, is_serving=next_srv, is_tiebreak=True)
+                response_data['tiebreak_required'] = True
+                response_data['current_set']  = {'score_p1': current_set.score_p1, 'score_p2': current_set.score_p2}
+                response_data['current_game'] = {'id_game': tb_game.id_game, 'is_serving_id': next_srv_id, 'is_tiebreak': True}
+                return Response(response_data, status=status.HTTP_201_CREATED)
+
+            if not set_over:
+                current_set.save()
+                next_srv_id = get_next_server(current_game.is_serving_id, match.id_player_creator_id, match.id_player_invited_id)
+                next_srv    = Usuario.objects.get(id=next_srv_id)
+                new_game    = MatchGame.objects.create(id_set=current_set, is_serving=next_srv)
+                response_data['current_set']  = {'score_p1': current_set.score_p1, 'score_p2': current_set.score_p2}
+                response_data['current_game'] = {'id_game': new_game.id_game, 'is_serving_id': next_srv_id}
+                return Response(response_data, status=status.HTTP_201_CREATED)
+
+            # — cerrar set —
+            response_data['set_closed'] = True
+            set_winner = match.id_player_creator if p1_wins_set else match.id_player_invited
+
+            current_set.winner_id = set_winner
+            current_set.duration  = int((timezone.now() - current_set.created_at).total_seconds())
+            current_set.save()
+
+            sets_p1 = MatchSet.objects.filter(id_match_score=match_score, winner_id=match.id_player_creator).count()
+            sets_p2 = MatchSet.objects.filter(id_match_score=match_score, winner_id=match.id_player_invited).count()
+
+            match_over, p1_wins_match = is_match_over(sets_p1, sets_p2, match.best_of)
+
+            if not match_over:
+                next_srv_id = get_next_server(current_game.is_serving_id, match.id_player_creator_id, match.id_player_invited_id)
+                next_srv    = Usuario.objects.get(id=next_srv_id)
+                new_set     = MatchSet.objects.create(id_match_score=match_score)
+                new_game    = MatchGame.objects.create(id_set=new_set, is_serving=next_srv)
+                response_data['current_set']  = {'set_number': sets_p1 + sets_p2 + 1, 'score_p1': 0, 'score_p2': 0}
+                response_data['current_game'] = {'id_game': new_game.id_game, 'is_serving_id': next_srv_id}
+                return Response(response_data, status=status.HTTP_201_CREATED)
+
+            # — marcar cierre pendiente, sin finalizar en BD —
+            response_data['match_closed'] = True
+            match_winner = match.id_player_creator if p1_wins_match else match.id_player_invited
+            response_data['winner'] = UsuarioResumenSerializer(match_winner).data
+            return Response(response_data, status=status.HTTP_201_CREATED)
+
+
+class UndoPointView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def delete(self, request, pk):
+        try:
+            match = MatchData.objects.select_related(
+                'id_player_creator', 'id_player_invited'
+            ).get(id_match=pk)
+        except MatchData.DoesNotExist:
+            return Response({'error': 'Partido no encontrado.'}, status=status.HTTP_404_NOT_FOUND)
+
+        if request.user.id not in {match.id_player_creator_id, match.id_player_invited_id}:
+            return Response({'error': 'No sos participante de este partido.'}, status=status.HTTP_403_FORBIDDEN)
+
+        if match.match_state not in {MatchState.INICIADO, MatchState.FINALIZADA}:
+            return Response({'error': 'No se puede deshacer en este estado.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            match_score = match.match_score
+        except MatchScore.DoesNotExist:
+            return Response({'error': 'El partido no tiene marcador.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        last_point = MatchPoint.objects.filter(
+            id_game__id_set__id_match_score=match_score
+        ).order_by('-created_at').first()
+
+        if not last_point:
+            return Response({'error': 'No hay puntos para deshacer.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        game        = last_point.id_game
+        current_set = game.id_set
+
+        with transaction.atomic():
+            last_point.delete()
+
+            if game.winner_id_id is None:
+                return Response({'mensaje': 'Punto deshecho.'}, status=status.HTTP_200_OK)
+
+            # El punto eliminado cerraba un game — revertir
+            game_winner_id  = game.winner_id_id
+            set_was_closed  = current_set.winner_id_id is not None
+            match_was_closed = match.match_state == MatchState.FINALIZADA
+
+            # Revertir score del set
+            if game_winner_id == match.id_player_creator_id:
+                current_set.score_p1 = max(0, current_set.score_p1 - 1)
+            else:
+                current_set.score_p2 = max(0, current_set.score_p2 - 1)
+
+            if set_was_closed:
+                # Eliminar el nuevo set vacío que se creó al cerrar el set
+                new_set = MatchSet.objects.filter(
+                    id_match_score=match_score, winner_id__isnull=True
+                ).order_by('-created_at').first()
+                if new_set and not MatchPoint.objects.filter(id_game__id_set=new_set).exists():
+                    MatchGame.objects.filter(id_set=new_set).delete()
+                    new_set.delete()
+
+                # Reabrir set
+                current_set.winner_id = None
+                current_set.duration  = None
+
+                if match_was_closed:
+                    match_score.winner_id = None
+                    match_score.duration  = None
+                    match_score.save()
+                    match.match_state = MatchState.INICIADO
+                    match.save()
+            else:
+                # Eliminar el nuevo game vacío que se creó al cerrar el game
+                new_game = MatchGame.objects.filter(
+                    id_set=current_set
+                ).exclude(id_game=game.id_game).order_by('-created_at').first()
+                if new_game and not MatchPoint.objects.filter(id_game=new_game).exists():
+                    new_game.delete()
+
+            current_set.save()
+
+            # Reabrir game
+            game.winner_id           = None
+            game.duration            = None
+            game.p1_game_final_score = None
+            game.p2_game_final_score = None
+            game.is_break            = None
+            game.save()
+
+        return Response({'mensaje': 'Punto deshecho.'}, status=status.HTTP_200_OK)
 
 
 class MatchDataViewSet(viewsets.ModelViewSet):

@@ -231,3 +231,4 @@ Todos los endpoints devuelven errores con este formato:
   ```
   GET /api/matches/<uuid>/recovery/
   ```
+
