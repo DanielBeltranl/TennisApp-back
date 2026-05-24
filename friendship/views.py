@@ -32,6 +32,7 @@ class PlayerSearchView(APIView):
                     u.correo AS correo,
                     (u.nombre || ' ' || u."apellidoPaterno" || ' ' || u."apellidoMaterno") AS display_name,
                     u."nivelUsuario" AS nivel,
+                    u.rol AS rol,
                     CASE
                         WHEN f.id IS NOT NULL AND f.status = 'ACEPTADO' THEN 'PARTNERS'
                         WHEN f.id IS NOT NULL AND f.status = 'PENDIENTE' THEN 'PENDING'
@@ -113,6 +114,19 @@ class PendingRequestsView(APIView):
     def get(self, request):
         requests = Friendship.objects.filter(
             friend=request.user,
+            status=FriendshipStatus.PENDIENTE
+        ).select_related('user', 'friend')
+
+        serializer = FriendshipSerializer(requests, many=True)
+        return Response(serializer.data)
+
+
+class SentPendingRequestsView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        requests = Friendship.objects.filter(
+            user=request.user,
             status=FriendshipStatus.PENDIENTE
         ).select_related('user', 'friend')
 
