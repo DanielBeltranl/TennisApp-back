@@ -11,6 +11,7 @@ class PlayerSearchSerializer(serializers.Serializer):
     correo = serializers.EmailField()
     display_name = serializers.CharField()
     nivel = serializers.CharField()
+    rol = serializers.CharField()
     button_state = serializers.CharField()
 
 

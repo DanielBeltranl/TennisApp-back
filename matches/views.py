@@ -22,6 +22,7 @@ from .serializer import (
     MatchSetSerializer,
     MatchPointSerializer,
     MatchGameSerializer,
+    MatchSummarySerializer,
     ScheduleMatchSerializer,
     UsuarioResumenSerializer,
 )
@@ -630,6 +631,30 @@ class UndoPointView(APIView):
             game.save()
 
         return Response({'mensaje': 'Punto deshecho.'}, status=status.HTTP_200_OK)
+
+
+class MatchSummaryView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        from django.db.models import Q, Prefetch
+        matches = (
+            MatchData.objects.filter(
+                Q(id_player_creator=request.user) | Q(id_player_invited=request.user),
+                match_state=MatchState.FINALIZADA,
+            )
+            .select_related(
+                'id_player_creator',
+                'id_player_invited',
+                'match_score__winner_id',
+            )
+            .prefetch_related(
+                Prefetch('match_score__match_sets',
+                         queryset=MatchSet.objects.prefetch_related('match_games'))
+            )
+            .order_by('-created_at')[:5]
+        )
+        return Response(MatchSummarySerializer(matches, many=True).data)
 
 
 class MatchDataViewSet(viewsets.ModelViewSet):

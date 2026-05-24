@@ -135,3 +135,33 @@ class MatchDataSerializer(serializers.ModelSerializer):
             'score', 'created_at', 'updated_at',
         ]
         read_only_fields = ['id_match', 'created_at', 'updated_at']
+
+
+class GameSummarySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = MatchGame
+        fields = ['p1_game_final_score', 'p2_game_final_score']
+
+
+class SetSummarySerializer(serializers.ModelSerializer):
+    games = GameSummarySerializer(source='match_games', many=True, read_only=True)
+
+    class Meta:
+        model = MatchSet
+        fields = ['score_p1', 'score_p2', 'games']
+
+
+class MatchSummarySerializer(serializers.ModelSerializer):
+    creator = UsuarioResumenSerializer(source='id_player_creator', read_only=True)
+    invited = UsuarioResumenSerializer(source='id_player_invited', read_only=True)
+    winner = UsuarioResumenSerializer(source='match_score.winner_id', read_only=True)
+    duration = serializers.IntegerField(source='match_score.duration', read_only=True)
+    sets = SetSummarySerializer(source='match_score.match_sets', many=True, read_only=True)
+
+    class Meta:
+        model = MatchData
+        fields = [
+            'id_match', 'creator', 'invited', 'guest_name',
+            'location', 'surface', 'best_of', 'match_state',
+            'winner', 'duration', 'sets', 'created_at',
+        ]
