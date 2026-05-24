@@ -48,6 +48,7 @@ INSTALLED_APPS = [
     'matches',
     'statistics',
     'friendship',
+    'coaching',
 ]
 
 MIDDLEWARE = [

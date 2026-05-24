@@ -78,7 +78,10 @@ class MatchScoreSerializer(serializers.ModelSerializer):
 
 
 class ScheduleMatchSerializer(serializers.ModelSerializer):
-    id_player_invited = serializers.PrimaryKeyRelatedField(queryset=Usuario.objects.all())
+    id_player_invited = serializers.PrimaryKeyRelatedField(
+        queryset=Usuario.objects.all(), required=False, allow_null=True,
+    )
+    guest_name = serializers.CharField(max_length=100, required=False, allow_null=True, allow_blank=True)
     creator = UsuarioResumenSerializer(source='id_player_creator', read_only=True)
     invited = UsuarioResumenSerializer(source='id_player_invited', read_only=True)
 
@@ -86,26 +89,32 @@ class ScheduleMatchSerializer(serializers.ModelSerializer):
         model = MatchData
         fields = [
             'id_match', 'creator', 'invited', 'id_player_invited',
-            'location', 'surface', 'best_of', 'match_state', 'created_at',
+            'guest_name', 'location', 'surface', 'best_of', 'match_state', 'created_at',
         ]
         read_only_fields = ['id_match', 'match_state', 'created_at']
 
-    def validate_id_player_invited(self, invited):
+    def validate(self, data):
+        invited = data.get('id_player_invited')
+        guest_name = data.get('guest_name', '').strip() if data.get('guest_name') else ''
         creator = self.context['request'].user
-        if invited == creator:
-            raise serializers.ValidationError("No puedes agendarte un partido contra ti mismo.")
-        is_friend = Friendship.objects.filter(
-            user=creator,
-            friend=invited,
-            status=FriendshipStatus.ACEPTADO,
-        ).exists()
-        if not is_friend:
-            raise serializers.ValidationError("El jugador invitado debe ser tu amigo.")
-        return invited
+
+        if invited and guest_name:
+            raise serializers.ValidationError('Enviá id_player_invited o guest_name, no ambos.')
+        if not invited and not guest_name:
+            raise serializers.ValidationError('Debés enviar id_player_invited o guest_name.')
+
+        if invited:
+            if invited == creator:
+                raise serializers.ValidationError({'id_player_invited': 'No podés agendarte un partido contra ti mismo.'})
+            if not Friendship.objects.filter(user=creator, friend=invited, status=FriendshipStatus.ACEPTADO).exists():
+                raise serializers.ValidationError({'id_player_invited': 'El jugador invitado debe ser tu amigo.'})
+
+        return data
 
     def create(self, validated_data):
         validated_data['id_player_creator'] = self.context['request'].user
-        validated_data['match_state'] = MatchState.PENDIENTE
+        is_guest = not validated_data.get('id_player_invited')
+        validated_data['match_state'] = MatchState.ACEPTADO if is_guest else MatchState.PENDIENTE
         return super().create(validated_data)
 
 
@@ -113,14 +122,16 @@ class MatchDataSerializer(serializers.ModelSerializer):
     creator = UsuarioResumenSerializer(source='id_player_creator', read_only=True)
     invited = UsuarioResumenSerializer(source='id_player_invited', read_only=True)
     id_player_creator = serializers.PrimaryKeyRelatedField(queryset=Usuario.objects.all(), write_only=True)
-    id_player_invited = serializers.PrimaryKeyRelatedField(queryset=Usuario.objects.all(), write_only=True)
+    id_player_invited = serializers.PrimaryKeyRelatedField(
+        queryset=Usuario.objects.all(), write_only=True, required=False, allow_null=True,
+    )
     score = MatchScoreSerializer(source='match_score', read_only=True)
 
     class Meta:
         model = MatchData
         fields = [
             'id_match', 'creator', 'invited', 'id_player_creator', 'id_player_invited',
-            'location', 'surface', 'best_of', 'match_state',
+            'guest_name', 'location', 'surface', 'best_of', 'match_state',
             'score', 'created_at', 'updated_at',
         ]
         read_only_fields = ['id_match', 'created_at', 'updated_at']

@@ -6,12 +6,15 @@ class UsuarioManager(BaseUserManager):
         if not correo: raise ValueError('El correo es obligatorio')
         correo = self.normalize_email(correo)
         user = self.model(correo=correo, **extra_fields)
-        user.set_password(password) # Encripta automáticamente
+        user.set_password(password)
         user.save(using=self._db)
         return user
 
-class NivelUsuario(models.TextChoices):
+class RolUsuario(models.TextChoices):
+    jugador = 'Jugador'
     entrenador = 'Entrenador'
+
+class NivelUsuario(models.TextChoices):
     amateur = 'Amateur'
     semipro = 'Semi-Pro'
     pro = 'Profesional'
@@ -26,19 +29,23 @@ class Usuario(AbstractBaseUser):
     apellidoPaterno = models.CharField(max_length=100)
     apellidoMaterno = models.CharField(max_length=100)
     correo = models.EmailField(unique=True)
-    sexo = models.CharField(max_length=10, choices=SexoUsuario.choices, default=SexoUsuario.otro)
-    edad = models.IntegerField()
-    altura = models.IntegerField()
-    peso = models.IntegerField()
-    nivelUsuario = models.CharField(max_length=20, choices=NivelUsuario.choices, default=NivelUsuario.amateur)
-    
-    # Requerido para Django Auth
+    rol = models.CharField(max_length=20, choices=RolUsuario.choices, default=RolUsuario.jugador)
+    sexo = models.CharField(max_length=10, choices=SexoUsuario.choices, null=True, blank=True)
+    fecha_nacimiento = models.DateField(null=True, blank=True)
+    altura = models.IntegerField(null=True, blank=True)
+    peso = models.IntegerField(null=True, blank=True)
+    nivelUsuario = models.CharField(max_length=20, choices=NivelUsuario.choices, null=True, blank=True)
+    entrenador = models.ForeignKey(
+        'self', on_delete=models.SET_NULL, null=True, blank=True, related_name='jugadores'
+    )
+
     is_active = models.BooleanField(default=True)
-    
+
     objects = UsuarioManager()
 
     USERNAME_FIELD = 'correo'
     REQUIRED_FIELDS = ['nombre']
+
     def __str__(self):
         return self.correo
 
