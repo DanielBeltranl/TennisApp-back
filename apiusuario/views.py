@@ -8,8 +8,13 @@ from rest_framework_simplejwt.settings import api_settings
 from rest_framework import permissions
 from django.utils import timezone
 
-from .serializer import UsuarioSerializer, TokenObtainPairSerializerPersonalizado
-from .models import Usuario, TokenSession
+from .serializer import (
+    UsuarioPerfilSerializer,
+    JugadorRegistroSerializer,
+    EntrenadorRegistroSerializer,
+    TokenObtainPairSerializerPersonalizado,
+)
+from .models import Usuario, TokenSession, RolUsuario
 
 
 class TokenObtainPairViewPersonalizado(TokenObtainPairView):
@@ -43,20 +48,38 @@ class TokenObtainPairViewPersonalizado(TokenObtainPairView):
         return response
 
 
+_SERIALIZER_POR_ROL = {
+    RolUsuario.jugador: JugadorRegistroSerializer,
+    RolUsuario.entrenador: EntrenadorRegistroSerializer,
+}
+
+
 class UsuarioViewSet(viewsets.ModelViewSet):
     queryset = Usuario.objects.all()
-    serializer_class = UsuarioSerializer
+    serializer_class = UsuarioPerfilSerializer
     permission_classes = [permissions.AllowAny]
 
     @action(detail=False, methods=['post'], permission_classes=[AllowAny])
     def registro(self, request):
-        serializer = self.get_serializer(data=request.data)
+        rol = request.data.get('rol')
+        serializer_class = _SERIALIZER_POR_ROL.get(rol)
+
+        if not serializer_class:
+            return Response(
+                {'rol': f"Valor inválido. Opciones: {list(_SERIALIZER_POR_ROL.keys())}"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        serializer = serializer_class(data=request.data)
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
         usuario = serializer.save()
 
         refresh = RefreshToken.for_user(usuario)
+        refresh['correo'] = usuario.correo
+        refresh['nombre'] = usuario.nombre
+        refresh['rol'] = usuario.rol
         refresh['nivelUsuario'] = usuario.nivelUsuario
         refresh['sexo'] = usuario.sexo
         access_str = str(refresh.access_token)
@@ -73,16 +96,15 @@ class UsuarioViewSet(viewsets.ModelViewSet):
         )
 
         return Response({
-            'usuario': UsuarioSerializer(usuario).data,
+            'usuario': UsuarioPerfilSerializer(usuario).data,
             'access': access_str,
             'refresh': refresh_str,
-            'mensaje': 'Usuario registrado exitosamente'
+            'mensaje': 'Usuario registrado exitosamente',
         }, status=status.HTTP_201_CREATED)
 
     @action(detail=False, methods=['post'], permission_classes=[IsAuthenticated])
     def perfil(self, request):
-        serializer = self.get_serializer(request.user)
-        return Response(serializer.data)
+        return Response(UsuarioPerfilSerializer(request.user).data)
 
     @action(detail=False, methods=['post'], permission_classes=[IsAuthenticated])
     def cambiar_password(self, request):
