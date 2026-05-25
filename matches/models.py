@@ -19,14 +19,16 @@ class MatchState(models.TextChoices):
 
 class MatchData(models.Model):
     id_match = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    id_player_creator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='creator_matches')
-    id_player_invited = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='invited_matches')
+    id_local_player = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='local_matches')
+    id_invited_player = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='invited_matches')
+    id_entrenador = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='coached_matches')
     guest_name = models.CharField(max_length=100, null=True, blank=True)
     location = models.CharField(max_length=100)
     surface = models.CharField(max_length=50)
     id_match_score = models.ForeignKey('MatchScore', on_delete=models.SET_NULL, null=True, blank=True, related_name='match_data_ref')
     best_of = models.IntegerField(choices=BestOf.choices)
     match_state = models.CharField(max_length=20, choices=MatchState.choices, default=MatchState.PENDIENTE)
+    scheduled_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -34,7 +36,7 @@ class MatchData(models.Model):
         db_table = 'match_data'
 
     def __str__(self):
-        return f"{self.id_player_creator} vs {self.id_player_invited} at {self.location}"
+        return f"{self.id_local_player} vs {self.id_invited_player} at {self.location}"
 
 
 class MatchScore(models.Model):

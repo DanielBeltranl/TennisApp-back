@@ -182,8 +182,8 @@ def _last_result(matches, player_id):
         return None
     last = matches[0]
     opponent = (
-        last.id_player_invited if last.id_player_creator_id == player_id
-        else last.id_player_creator
+        last.id_invited_player if last.id_local_player_id == player_id
+        else last.id_local_player
     )
     return {
         'match_id': str(last.id_match),

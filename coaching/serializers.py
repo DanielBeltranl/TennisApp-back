@@ -13,6 +13,27 @@ class EntrenadorResumenSerializer(serializers.ModelSerializer):
         read_only_fields = fields
 
 
+class JugadorResumenSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Usuario
+        fields = ['id', 'nombre', 'apellidoPaterno', 'apellidoMaterno', 'correo', 'nivelUsuario']
+        read_only_fields = fields
+
+
+class JugadorBusquedaSerializer(serializers.ModelSerializer):
+    entrenador_nombre = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Usuario
+        fields = ['id', 'nombre', 'apellidoPaterno', 'entrenador_nombre']
+        read_only_fields = fields
+
+    def get_entrenador_nombre(self, obj):
+        if obj.entrenador:
+            return f"{obj.entrenador.nombre} {obj.entrenador.apellidoPaterno}"
+        return None
+
+
 class SolicitudAsociacionSerializer(serializers.ModelSerializer):
     jugador = EntrenadorResumenSerializer(read_only=True)
     entrenador = EntrenadorResumenSerializer(read_only=True)

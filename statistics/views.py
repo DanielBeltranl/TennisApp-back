@@ -14,12 +14,12 @@ class MatchStatsView(APIView):
     def get(self, request, pk):
         try:
             match = MatchData.objects.select_related(
-                'id_player_creator', 'id_player_invited', 'match_score'
+                'id_local_player', 'id_invited_player', 'match_score'
             ).get(id_match=pk)
         except MatchData.DoesNotExist:
             return Response({'error': 'Partido no encontrado.'}, status=status.HTTP_404_NOT_FOUND)
 
-        if request.user.id not in {match.id_player_creator_id, match.id_player_invited_id}:
+        if request.user.id not in {match.id_local_player_id, match.id_invited_player_id}:
             return Response({'error': 'No sos participante de este partido.'}, status=status.HTTP_403_FORBIDDEN)
 
         if match.match_state != MatchState.FINALIZADA:
@@ -49,10 +49,10 @@ class GlobalStatsView(APIView):
     def get(self, request):
         matches = list(
             MatchData.objects.filter(
-                Q(id_player_creator=request.user) | Q(id_player_invited=request.user),
+                Q(id_local_player=request.user) | Q(id_invited_player=request.user),
                 match_state=MatchState.FINALIZADA,
             )
-            .select_related('id_player_creator', 'id_player_invited', 'match_score')
+            .select_related('id_local_player', 'id_invited_player', 'match_score')
             .order_by('-updated_at')[:14]
         )
 

@@ -1,6 +1,5 @@
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
-from friendship.models import Friendship, FriendshipStatus
 from .models import MatchData, MatchScore, MatchSet, MatchPoint, MatchGame, MatchState
 
 Usuario = get_user_model()
@@ -78,51 +77,57 @@ class MatchScoreSerializer(serializers.ModelSerializer):
 
 
 class ScheduleMatchSerializer(serializers.ModelSerializer):
-    id_player_invited = serializers.PrimaryKeyRelatedField(
+    id_local_player = serializers.PrimaryKeyRelatedField(
+        queryset=Usuario.objects.all(), write_only=True,
+    )
+    id_invited_player = serializers.PrimaryKeyRelatedField(
         queryset=Usuario.objects.all(), required=False, allow_null=True,
     )
+    scheduled_at = serializers.DateTimeField(required=True)
     guest_name = serializers.CharField(max_length=100, required=False, allow_null=True, allow_blank=True)
-    creator = UsuarioResumenSerializer(source='id_player_creator', read_only=True)
-    invited = UsuarioResumenSerializer(source='id_player_invited', read_only=True)
+    local_player = UsuarioResumenSerializer(source='id_local_player', read_only=True)
+    invited = UsuarioResumenSerializer(source='id_invited_player', read_only=True)
+    entrenador = UsuarioResumenSerializer(source='id_entrenador', read_only=True)
 
     class Meta:
         model = MatchData
         fields = [
-            'id_match', 'creator', 'invited', 'id_player_invited',
-            'guest_name', 'location', 'surface', 'best_of', 'match_state', 'created_at',
+            'id_match', 'entrenador', 'local_player', 'invited',
+            'id_local_player', 'id_invited_player',
+            'scheduled_at', 'guest_name', 'location', 'surface', 'best_of',
+            'match_state', 'created_at',
         ]
         read_only_fields = ['id_match', 'match_state', 'created_at']
 
     def validate(self, data):
-        invited = data.get('id_player_invited')
+        invited = data.get('id_invited_player')
         guest_name = data.get('guest_name', '').strip() if data.get('guest_name') else ''
-        creator = self.context['request'].user
+        coach = self.context['request'].user
+        local_player = data.get('id_local_player')
 
         if invited and guest_name:
-            raise serializers.ValidationError('Enviá id_player_invited o guest_name, no ambos.')
+            raise serializers.ValidationError('Enviá id_invited_player o guest_name, no ambos.')
         if not invited and not guest_name:
-            raise serializers.ValidationError('Debés enviar id_player_invited o guest_name.')
+            raise serializers.ValidationError('Debés enviar id_invited_player o guest_name.')
 
-        if invited:
-            if invited == creator:
-                raise serializers.ValidationError({'id_player_invited': 'No podés agendarte un partido contra ti mismo.'})
-            if not Friendship.objects.filter(user=creator, friend=invited, status=FriendshipStatus.ACEPTADO).exists():
-                raise serializers.ValidationError({'id_player_invited': 'El jugador invitado debe ser tu amigo.'})
+        if local_player and getattr(local_player, 'entrenador', None) != coach:
+            raise serializers.ValidationError({'id_local_player': 'El jugador local debe ser uno de tus entrenados.'})
 
         return data
 
     def create(self, validated_data):
-        validated_data['id_player_creator'] = self.context['request'].user
-        is_guest = not validated_data.get('id_player_invited')
+        validated_data['id_entrenador'] = self.context['request'].user
+        is_guest = not validated_data.get('id_invited_player')
         validated_data['match_state'] = MatchState.ACEPTADO if is_guest else MatchState.PENDIENTE
         return super().create(validated_data)
 
 
 class MatchDataSerializer(serializers.ModelSerializer):
-    creator = UsuarioResumenSerializer(source='id_player_creator', read_only=True)
-    invited = UsuarioResumenSerializer(source='id_player_invited', read_only=True)
-    id_player_creator = serializers.PrimaryKeyRelatedField(queryset=Usuario.objects.all(), write_only=True)
-    id_player_invited = serializers.PrimaryKeyRelatedField(
+    local_player = UsuarioResumenSerializer(source='id_local_player', read_only=True)
+    invited = UsuarioResumenSerializer(source='id_invited_player', read_only=True)
+    entrenador = UsuarioResumenSerializer(source='id_entrenador', read_only=True)
+    id_local_player = serializers.PrimaryKeyRelatedField(queryset=Usuario.objects.all(), write_only=True)
+    id_invited_player = serializers.PrimaryKeyRelatedField(
         queryset=Usuario.objects.all(), write_only=True, required=False, allow_null=True,
     )
     score = MatchScoreSerializer(source='match_score', read_only=True)
@@ -130,9 +135,10 @@ class MatchDataSerializer(serializers.ModelSerializer):
     class Meta:
         model = MatchData
         fields = [
-            'id_match', 'creator', 'invited', 'id_player_creator', 'id_player_invited',
+            'id_match', 'entrenador', 'local_player', 'invited',
+            'id_local_player', 'id_invited_player',
             'guest_name', 'location', 'surface', 'best_of', 'match_state',
-            'score', 'created_at', 'updated_at',
+            'scheduled_at', 'score', 'created_at', 'updated_at',
         ]
         read_only_fields = ['id_match', 'created_at', 'updated_at']
 
@@ -152,8 +158,9 @@ class SetSummarySerializer(serializers.ModelSerializer):
 
 
 class MatchSummarySerializer(serializers.ModelSerializer):
-    creator = UsuarioResumenSerializer(source='id_player_creator', read_only=True)
-    invited = UsuarioResumenSerializer(source='id_player_invited', read_only=True)
+    local_player = UsuarioResumenSerializer(source='id_local_player', read_only=True)
+    invited = UsuarioResumenSerializer(source='id_invited_player', read_only=True)
+    entrenador = UsuarioResumenSerializer(source='id_entrenador', read_only=True)
     winner = UsuarioResumenSerializer(source='match_score.winner_id', read_only=True)
     duration = serializers.IntegerField(source='match_score.duration', read_only=True)
     sets = SetSummarySerializer(source='match_score.match_sets', many=True, read_only=True)
@@ -161,7 +168,7 @@ class MatchSummarySerializer(serializers.ModelSerializer):
     class Meta:
         model = MatchData
         fields = [
-            'id_match', 'creator', 'invited', 'guest_name',
+            'id_match', 'entrenador', 'local_player', 'invited', 'guest_name',
             'location', 'surface', 'best_of', 'match_state',
-            'winner', 'duration', 'sets', 'created_at',
+            'winner', 'duration', 'sets', 'scheduled_at', 'created_at',
         ]
