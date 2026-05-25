@@ -7,10 +7,16 @@ from .views import (
     AceptarSolicitudView,
     RechazarSolicitudView,
     DashboardEntrenadorView,
+    JugadoresEntrenadorView,
+    ActualizarNivelJugadorView,
+    JugadorSearchView,
 )
 
 urlpatterns = [
     path('entrenadores/', EntrenadorSearchView.as_view(), name='entrenador-search'),
+    path('jugadores/', JugadoresEntrenadorView.as_view(), name='jugadores-entrenador'),
+    path('jugadores/<int:pk>/nivel/', ActualizarNivelJugadorView.as_view(), name='jugador-nivel'),
+    path('jugadores/buscar/', JugadorSearchView.as_view(), name='jugador-search'),
     path('solicitudes/', EnviarSolicitudView.as_view(), name='solicitud-enviar'),
     path('solicitudes/enviadas/', SolicitudesEnviadasView.as_view(), name='solicitudes-enviadas'),
     path('solicitudes/recibidas/', SolicitudesRecibidasView.as_view(), name='solicitudes-recibidas'),

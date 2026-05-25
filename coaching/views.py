@@ -12,6 +12,8 @@ from matches.models import MatchData, MatchState
 from .models import SolicitudAsociacion, EstadoSolicitud
 from .serializers import (
     EntrenadorResumenSerializer,
+    JugadorResumenSerializer,
+    JugadorBusquedaSerializer,
     SolicitudAsociacionSerializer,
     EnviarSolicitudSerializer,
     AceptarSolicitudSerializer,
@@ -147,10 +149,10 @@ class DashboardEntrenadorView(APIView):
 
         matches = (
             MatchData.objects.filter(
-                Q(id_player_creator_id__in=jugadores_ids) | Q(id_player_invited_id__in=jugadores_ids),
+                Q(id_local_player_id__in=jugadores_ids) | Q(id_invited_player_id__in=jugadores_ids),
                 match_state=MatchState.FINALIZADA,
             )
-            .select_related('id_player_creator', 'id_player_invited', 'match_score')
+            .select_related('id_local_player', 'id_invited_player', 'match_score')
             .prefetch_related('match_score__match_sets')
             .order_by('-updated_at')[:5]
         )
@@ -158,16 +160,16 @@ class DashboardEntrenadorView(APIView):
         return Response({'partidos': [self._serializar(m, jugadores_ids) for m in matches]})
 
     def _serializar(self, match, jugadores_ids):
-        jugador_es_creator = match.id_player_creator_id in jugadores_ids
-        jugador = match.id_player_creator if jugador_es_creator else match.id_player_invited
+        jugador_es_creator = match.id_local_player_id in jugadores_ids
+        jugador = match.id_local_player if jugador_es_creator else match.id_invited_player
 
         if jugador_es_creator:
-            oponente_nombre = match.id_player_invited.nombre if match.id_player_invited else match.guest_name or ''
-            oponente_apellido = match.id_player_invited.apellidoPaterno if match.id_player_invited else ''
-            es_invitado = match.id_player_invited_id is None
+            oponente_nombre = match.id_invited_player.nombre if match.id_invited_player else match.guest_name or ''
+            oponente_apellido = match.id_invited_player.apellidoPaterno if match.id_invited_player else ''
+            es_invitado = match.id_invited_player_id is None
         else:
-            oponente_nombre = match.id_player_creator.nombre
-            oponente_apellido = match.id_player_creator.apellidoPaterno
+            oponente_nombre = match.id_local_player.nombre
+            oponente_apellido = match.id_local_player.apellidoPaterno
             es_invitado = False
 
         sets_data = []
@@ -223,3 +225,48 @@ class DashboardEntrenadorView(APIView):
             'surface': match.surface,
             'created_at': match.created_at,
         }
+
+
+class JugadoresEntrenadorView(APIView):
+    permission_classes = [IsAuthenticated, EsEntrenador]
+
+    def get(self, request):
+        jugadores = Usuario.objects.filter(entrenador=request.user, is_active=True)
+        return Response(JugadorResumenSerializer(jugadores, many=True).data)
+
+
+class ActualizarNivelJugadorView(APIView):
+    permission_classes = [IsAuthenticated, EsEntrenador]
+
+    def patch(self, request, pk):
+        try:
+            jugador = Usuario.objects.get(id=pk, entrenador=request.user, is_active=True)
+        except Usuario.DoesNotExist:
+            return Response({'error': 'Jugador no encontrado o no pertenece a tus entrenados.'}, status=status.HTTP_404_NOT_FOUND)
+
+        serializer = AceptarSolicitudSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        jugador.nivelUsuario = serializer.validated_data['nivel']
+        jugador.save(update_fields=['nivelUsuario'])
+
+        return Response({'id': jugador.id, 'nivelUsuario': jugador.nivelUsuario})
+
+
+class JugadorSearchView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        term = request.query_params.get('q', '').strip()
+        if not term:
+            return Response([])
+
+        jugadores = Usuario.objects.filter(
+            rol=RolUsuario.jugador,
+            is_active=True,
+        ).filter(
+            Q(nombre__icontains=term) | Q(apellidoPaterno__icontains=term)
+        ).select_related('entrenador').distinct()[:15]
+
+        return Response(JugadorBusquedaSerializer(jugadores, many=True).data)
