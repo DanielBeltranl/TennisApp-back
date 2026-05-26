@@ -335,6 +335,23 @@ class RecoverMatchView(APIView):
         })
 
 
+class CoachPlayersInvitationsView(APIView):
+    permission_classes = [IsAuthenticated, EsEntrenador]
+
+    def get(self, request):
+        my_players = request.user.jugadores.all()
+        matches = (
+            MatchData.objects.filter(
+                id_invited_player__in=my_players,
+                match_state=MatchState.PENDIENTE,
+            )
+            .exclude(id_entrenador=request.user)
+            .select_related('id_local_player', 'id_invited_player', 'id_entrenador')
+            .order_by('-created_at')
+        )
+        return Response(ScheduleMatchSerializer(matches, many=True, context={'request': request}).data)
+
+
 class MyCreatedMatchesView(APIView):
     permission_classes = [IsAuthenticated]
 
