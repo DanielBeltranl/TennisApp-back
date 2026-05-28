@@ -54,15 +54,19 @@ class AcceptMatchView(APIView):
 
     def patch(self, request, pk):
         try:
-            match = MatchData.objects.get(id_match=pk)
+            match = MatchData.objects.select_related('id_invited_player').get(id_match=pk)
         except MatchData.DoesNotExist:
             return Response({'error': 'Partido no encontrado.'}, status=status.HTTP_404_NOT_FOUND)
 
         if not match.id_invited_player_id:
             return Response({'error': 'Este partido no tiene jugador invitado registrado.'}, status=status.HTTP_400_BAD_REQUEST)
 
-        if match.id_invited_player_id != request.user.id:
-            return Response({'error': 'Solo el jugador invitado puede aceptar.'}, status=status.HTTP_403_FORBIDDEN)
+        invited_player = match.id_invited_player
+        is_invited_player = request.user.id == match.id_invited_player_id
+        is_players_coach = invited_player.entrenador_id == request.user.id
+
+        if not is_invited_player and not is_players_coach:
+            return Response({'error': 'Solo el jugador invitado o su entrenador pueden aceptar.'}, status=status.HTTP_403_FORBIDDEN)
 
         if match.match_state != MatchState.PENDIENTE:
             return Response({'error': f'El partido no está en estado PENDIENTE (estado actual: {match.match_state}).'}, status=status.HTTP_400_BAD_REQUEST)
@@ -95,7 +99,7 @@ class RejectMatchView(APIView):
 
 
 class StartMatchView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, EsEntrenador]
 
     def patch(self, request, pk):
         try:
@@ -103,14 +107,8 @@ class StartMatchView(APIView):
         except MatchData.DoesNotExist:
             return Response({'error': 'Partido no encontrado.'}, status=status.HTTP_404_NOT_FOUND)
 
-        is_guest_match = match.id_invited_player_id is None
-        participant_ids = (
-            {match.id_local_player_id}
-            if is_guest_match
-            else {match.id_local_player_id, match.id_invited_player_id}
-        )
-        if request.user.id not in participant_ids:
-            return Response({'error': 'No sos participante de este partido.'}, status=status.HTTP_403_FORBIDDEN)
+        if match.id_entrenador_id != request.user.id:
+            return Response({'error': 'Solo el entrenador del partido puede iniciarlo.'}, status=status.HTTP_403_FORBIDDEN)
 
         if match.match_state != MatchState.ACEPTADO:
             return Response({'error': f'El partido no está en estado ACEPTADO (estado actual: {match.match_state}).'}, status=status.HTTP_400_BAD_REQUEST)
@@ -118,6 +116,13 @@ class StartMatchView(APIView):
         first_server_id = request.data.get('first_server_id')
         if not first_server_id:
             return Response({'error': 'first_server_id es requerido.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        is_guest_match = match.id_invited_player_id is None
+        participant_ids = (
+            {match.id_local_player_id}
+            if is_guest_match
+            else {match.id_local_player_id, match.id_invited_player_id}
+        )
 
         if int(first_server_id) not in participant_ids:
             return Response({'error': 'El servidor inicial debe ser participante del partido.'}, status=status.HTTP_400_BAD_REQUEST)
@@ -241,7 +246,7 @@ class RecoverMatchView(APIView):
         except MatchData.DoesNotExist:
             return Response({'error': 'Partido no encontrado.'}, status=status.HTTP_404_NOT_FOUND)
 
-        valid_ids = {match.id_local_player_id, match.id_invited_player_id} if match.id_invited_player_id else {match.id_local_player_id}
+        valid_ids = {match.id_local_player_id, match.id_invited_player_id, match.id_entrenador_id} if match.id_invited_player_id else {match.id_local_player_id, match.id_entrenador_id}
         if request.user.id not in valid_ids:
             return Response({'error': 'No sos participante de este partido.'}, status=status.HTTP_403_FORBIDDEN)
 
@@ -343,7 +348,7 @@ class CoachPlayersInvitationsView(APIView):
         matches = (
             MatchData.objects.filter(
                 id_invited_player__in=my_players,
-                match_state=MatchState.PENDIENTE,
+                match_state__in=[MatchState.PENDIENTE, MatchState.ACEPTADO],
             )
             .exclude(id_entrenador=request.user)
             .select_related('id_local_player', 'id_invited_player', 'id_entrenador')
@@ -359,6 +364,22 @@ class MyCreatedMatchesView(APIView):
         matches = MatchData.objects.filter(
             id_local_player=request.user
         ).select_related('id_local_player', 'id_invited_player').order_by('-created_at')
+        return Response(MatchDataSerializer(matches, many=True).data)
+
+
+class CoachCreatedMatchesView(APIView):
+    permission_classes = [IsAuthenticated, EsEntrenador]
+
+    def get(self, request):
+        matches = (
+            MatchData.objects.filter(id_entrenador=request.user)
+            .select_related(
+                'id_local_player', 'id_invited_player', 'id_entrenador',
+                'match_score__winner_id',
+            )
+            .prefetch_related('match_score__match_sets__match_games')
+            .order_by('-created_at')
+        )
         return Response(MatchDataSerializer(matches, many=True).data)
 
 

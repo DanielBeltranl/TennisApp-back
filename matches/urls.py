@@ -20,6 +20,7 @@ from .views import (
     UndoPointView,
     MatchSummaryView,
     CoachPlayersInvitationsView,
+    CoachCreatedMatchesView,
 )
 
 router = DefaultRouter()
@@ -32,6 +33,7 @@ router.register(r'match-games', MatchGameViewSet, basename='match-game')
 urlpatterns = [
     path('schedule/', ScheduleMatchView.as_view(), name='match-schedule'),
     path('coach/players-invitations/', CoachPlayersInvitationsView.as_view(), name='coach-players-invitations'),
+    path('coach/created/', CoachCreatedMatchesView.as_view(), name='coach-created-matches'),
     path('my-created/', MyCreatedMatchesView.as_view(), name='my-created-matches'),
     path('summary/', MatchSummaryView.as_view(), name='match-summary'),
     path('my-invited/', MyInvitedMatchesView.as_view(), name='my-invited-matches'),
