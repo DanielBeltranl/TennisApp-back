@@ -10,6 +10,8 @@ from .views import (
     JugadoresEntrenadorView,
     ActualizarNivelJugadorView,
     JugadorSearchView,
+    PartidosInvitadosJugadoresView,
+    HistorialJugadoresView,
 )
 
 urlpatterns = [
@@ -23,4 +25,6 @@ urlpatterns = [
     path('solicitudes/<int:pk>/aceptar/', AceptarSolicitudView.as_view(), name='solicitud-aceptar'),
     path('solicitudes/<int:pk>/rechazar/', RechazarSolicitudView.as_view(), name='solicitud-rechazar'),
     path('dashboard/', DashboardEntrenadorView.as_view(), name='dashboard-entrenador'),
+    path('partidos-invitados/', PartidosInvitadosJugadoresView.as_view(), name='partidos-invitados-jugadores'),
+    path('historial/', HistorialJugadoresView.as_view(), name='historial-jugadores'),
 ]

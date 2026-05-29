@@ -6,6 +6,8 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework import status
 
 from .models import Friendship, FriendshipStatus
+from notifications.services import crear_notificacion
+from notifications.models import TipoNotificacion
 from .serializer import (
     PlayerSearchSerializer,
     SendFriendRequestSerializer,
@@ -70,6 +72,11 @@ class SendFriendRequestView(APIView):
         friend = Usuario.objects.get(id=serializer.validated_data['friend_id'])
         friendship = Friendship.objects.create(user=request.user, friend=friend)
 
+        crear_notificacion(
+            friend,
+            TipoNotificacion.SOLICITUD_AMISTAD,
+            {'redirect_to': '/friends/pending', 'meta': {'usuario_id': request.user.id, 'nombre': request.user.nombre, 'apellido': request.user.apellidoPaterno}},
+        )
         return Response(FriendshipSerializer(friendship).data, status=status.HTTP_201_CREATED)
 
 
@@ -92,6 +99,11 @@ class AcceptFriendRequestView(APIView):
                 status=FriendshipStatus.ACEPTADO,
             )
 
+        crear_notificacion(
+            friendship.user,
+            TipoNotificacion.SOLICITUD_ACEPTADA,
+            {'redirect_to': '/friends', 'meta': {'usuario_id': request.user.id, 'nombre': request.user.nombre, 'apellido': request.user.apellidoPaterno}},
+        )
         return Response(FriendshipSerializer(friendship).data)
 
 

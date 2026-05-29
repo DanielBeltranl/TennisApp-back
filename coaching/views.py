@@ -9,7 +9,10 @@ from rest_framework import status
 from apiusuario.models import RolUsuario
 from apiusuario.permissions import EsJugador, EsEntrenador
 from matches.models import MatchData, MatchState
+from matches.serializer import MatchDataSerializer
 from .models import SolicitudAsociacion, EstadoSolicitud
+from notifications.services import crear_notificacion
+from notifications.models import TipoNotificacion
 from .serializers import (
     EntrenadorResumenSerializer,
     JugadorResumenSerializer,
@@ -57,6 +60,11 @@ class EnviarSolicitudView(APIView):
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
         solicitud = serializer.save()
+        crear_notificacion(
+            solicitud.entrenador,
+            TipoNotificacion.SOLICITUD_ENTRENADOR,
+            {'redirect_to': '/coaching/solicitudes/recibidas', 'meta': {'jugador_id': solicitud.jugador.id, 'nombre': solicitud.jugador.nombre, 'apellido': solicitud.jugador.apellidoPaterno}},
+        )
         return Response(SolicitudAsociacionSerializer(solicitud).data, status=status.HTTP_201_CREATED)
 
 
@@ -109,6 +117,11 @@ class AceptarSolicitudView(APIView):
             solicitud.status = EstadoSolicitud.aceptada
             solicitud.save(update_fields=['status', 'updated_at'])
 
+        crear_notificacion(
+            jugador,
+            TipoNotificacion.SOLICITUD_ACEPTADA,
+            {'redirect_to': '/coaching', 'meta': {'entrenador_id': request.user.id, 'nombre': request.user.nombre, 'apellido': request.user.apellidoPaterno}},
+        )
         return Response({
             'id': solicitud.id,
             'jugador': EntrenadorResumenSerializer(solicitud.jugador).data,
@@ -133,6 +146,11 @@ class RechazarSolicitudView(APIView):
         solicitud.status = EstadoSolicitud.rechazada
         solicitud.save(update_fields=['status', 'updated_at'])
 
+        crear_notificacion(
+            solicitud.jugador,
+            TipoNotificacion.SOLICITUD_RECHAZADA,
+            {'redirect_to': '/coaching', 'meta': {'entrenador_id': request.user.id, 'nombre': request.user.nombre, 'apellido': request.user.apellidoPaterno}},
+        )
         return Response({'id': solicitud.id, 'status': solicitud.status})
 
 
@@ -227,6 +245,30 @@ class DashboardEntrenadorView(APIView):
         }
 
 
+class HistorialJugadoresView(APIView):
+    permission_classes = [IsAuthenticated, EsEntrenador]
+
+    def get(self, request):
+        jugadores_ids = set(
+            Usuario.objects.filter(entrenador=request.user).values_list('id', flat=True)
+        )
+
+        if not jugadores_ids:
+            return Response({'partidos': []})
+
+        matches = (
+            MatchData.objects.filter(
+                Q(id_local_player_id__in=jugadores_ids) | Q(id_invited_player_id__in=jugadores_ids),
+                match_state=MatchState.FINALIZADA,
+            )
+            .select_related('id_local_player', 'id_invited_player', 'match_score')
+            .prefetch_related('match_score__match_sets')
+            .order_by('-updated_at')
+        )
+
+        return Response({'partidos': [DashboardEntrenadorView._serializar(self, m, jugadores_ids) for m in matches]})
+
+
 class JugadoresEntrenadorView(APIView):
     permission_classes = [IsAuthenticated, EsEntrenador]
 
@@ -270,3 +312,20 @@ class JugadorSearchView(APIView):
         ).select_related('entrenador').distinct()[:15]
 
         return Response(JugadorBusquedaSerializer(jugadores, many=True).data)
+
+
+class PartidosInvitadosJugadoresView(APIView):
+    permission_classes = [IsAuthenticated, EsEntrenador]
+
+    def get(self, request):
+        jugadores_ids = Usuario.objects.filter(
+            entrenador=request.user, is_active=True
+        ).values_list('id', flat=True)
+
+        matches = MatchData.objects.filter(
+            id_invited_player__in=jugadores_ids
+        ).select_related(
+            'id_local_player', 'id_invited_player', 'id_entrenador'
+        ).order_by('-created_at')
+
+        return Response(MatchDataSerializer(matches, many=True, context={'request': request}).data)
