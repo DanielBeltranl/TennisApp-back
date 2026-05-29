@@ -28,7 +28,23 @@ from .serializer import (
     UsuarioResumenSerializer,
 )
 
+import socketio
+
 Usuario = get_user_model()
+
+
+
+sio = socketio.Client()
+SOCKETIO_URL = "http://localhost:3056/"
+
+
+def emitir_socketio(evento, data):
+    try:
+        if not sio.connected:
+            sio.connect(SOCKETIO_URL, socketio_path='/socket_totem/')
+        sio.emit(evento, data)
+    except Exception as exc:
+        print(f"SocketIO emit skipped for {evento}: {exc}")
 
 
 class ScheduleMatchView(APIView):
