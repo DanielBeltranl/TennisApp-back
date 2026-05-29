@@ -81,6 +81,7 @@ class MatchGame(models.Model):
     is_break = models.BooleanField(null=True, blank=True)
     is_tiebreak = models.BooleanField(default=False)
     is_serving = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='games_serving')
+    guest_is_serving = models.BooleanField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

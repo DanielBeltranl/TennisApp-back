@@ -1,0 +1,693 @@
+[
+  {
+    "model": "apiusuario.usuario",
+    "pk": 101,
+    "fields": {
+      "password": "!",
+      "last_login": null,
+      "nombre": "Carlos",
+      "apellidoPaterno": "Rojas",
+      "apellidoMaterno": "Méndez",
+      "correo": "entrenador1@seed.com",
+      "rol": "Entrenador",
+      "sexo": null,
+      "fecha_nacimiento": "1978-06-15",
+      "altura": null,
+      "peso": null,
+      "nivelUsuario": null,
+      "entrenador": null,
+      "is_active": true,
+      "created_at": "2026-01-01T10:00:00Z",
+      "updated_at": "2026-01-01T10:00:00Z"
+    }
+  },
+  {
+    "model": "apiusuario.usuario",
+    "pk": 102,
+    "fields": {
+      "password": "!",
+      "last_login": null,
+      "nombre": "Laura",
+      "apellidoPaterno": "Sánchez",
+      "apellidoMaterno": "Vega",
+      "correo": "entrenador2@seed.com",
+      "rol": "Entrenador",
+      "sexo": null,
+      "fecha_nacimiento": "1982-11-03",
+      "altura": null,
+      "peso": null,
+      "nivelUsuario": null,
+      "entrenador": null,
+      "is_active": true,
+      "created_at": "2026-01-01T11:00:00Z",
+      "updated_at": "2026-01-01T11:00:00Z"
+    }
+  },
+  {
+    "model": "apiusuario.usuario",
+    "pk": 103,
+    "fields": {
+      "password": "!",
+      "last_login": null,
+      "nombre": "Maxi",
+      "apellidoPaterno": "Huerta",
+      "apellidoMaterno": "López",
+      "correo": "jugador1@seed.com",
+      "rol": "Jugador",
+      "sexo": "Masculino",
+      "fecha_nacimiento": "2000-09-29",
+      "altura": 180,
+      "peso": 75,
+      "nivelUsuario": "Amateur",
+      "entrenador": 101,
+      "is_active": true,
+      "created_at": "2026-01-02T10:00:00Z",
+      "updated_at": "2026-01-02T10:00:00Z"
+    }
+  },
+  {
+    "model": "apiusuario.usuario",
+    "pk": 104,
+    "fields": {
+      "password": "!",
+      "last_login": null,
+      "nombre": "Sofía",
+      "apellidoPaterno": "Morales",
+      "apellidoMaterno": "Rivas",
+      "correo": "jugadora2@seed.com",
+      "rol": "Jugador",
+      "sexo": "Femenino",
+      "fecha_nacimiento": "2001-04-12",
+      "altura": 165,
+      "peso": 60,
+      "nivelUsuario": "Amateur",
+      "entrenador": 101,
+      "is_active": true,
+      "created_at": "2026-01-02T11:00:00Z",
+      "updated_at": "2026-01-02T11:00:00Z"
+    }
+  },
+  {
+    "model": "apiusuario.usuario",
+    "pk": 105,
+    "fields": {
+      "password": "!",
+      "last_login": null,
+      "nombre": "Diego",
+      "apellidoPaterno": "Fuentes",
+      "apellidoMaterno": "Castro",
+      "correo": "jugador3@seed.com",
+      "rol": "Jugador",
+      "sexo": "Masculino",
+      "fecha_nacimiento": "1998-07-20",
+      "altura": 178,
+      "peso": 78,
+      "nivelUsuario": "Semi-Pro",
+      "entrenador": 101,
+      "is_active": true,
+      "created_at": "2026-01-02T12:00:00Z",
+      "updated_at": "2026-01-02T12:00:00Z"
+    }
+  },
+  {
+    "model": "apiusuario.usuario",
+    "pk": 106,
+    "fields": {
+      "password": "!",
+      "last_login": null,
+      "nombre": "Valentina",
+      "apellidoPaterno": "Torres",
+      "apellidoMaterno": "Núñez",
+      "correo": "jugadora4@seed.com",
+      "rol": "Jugador",
+      "sexo": "Femenino",
+      "fecha_nacimiento": "1999-02-28",
+      "altura": 168,
+      "peso": 62,
+      "nivelUsuario": "Semi-Pro",
+      "entrenador": 101,
+      "is_active": true,
+      "created_at": "2026-01-02T13:00:00Z",
+      "updated_at": "2026-01-02T13:00:00Z"
+    }
+  },
+  {
+    "model": "apiusuario.usuario",
+    "pk": 107,
+    "fields": {
+      "password": "!",
+      "last_login": null,
+      "nombre": "Andrés",
+      "apellidoPaterno": "Vargas",
+      "apellidoMaterno": "Pérez",
+      "correo": "jugador5@seed.com",
+      "rol": "Jugador",
+      "sexo": "Masculino",
+      "fecha_nacimiento": "1995-11-08",
+      "altura": 182,
+      "peso": 82,
+      "nivelUsuario": "Profesional",
+      "entrenador": 101,
+      "is_active": true,
+      "created_at": "2026-01-02T14:00:00Z",
+      "updated_at": "2026-01-02T14:00:00Z"
+    }
+  },
+  {
+    "model": "apiusuario.usuario",
+    "pk": 108,
+    "fields": {
+      "password": "!",
+      "last_login": null,
+      "nombre": "Martina",
+      "apellidoPaterno": "Ibáñez",
+      "apellidoMaterno": "Molina",
+      "correo": "jugadora6@seed.com",
+      "rol": "Jugador",
+      "sexo": "Femenino",
+      "fecha_nacimiento": "2002-03-17",
+      "altura": 162,
+      "peso": 58,
+      "nivelUsuario": "Amateur",
+      "entrenador": 102,
+      "is_active": true,
+      "created_at": "2026-01-03T10:00:00Z",
+      "updated_at": "2026-01-03T10:00:00Z"
+    }
+  },
+  {
+    "model": "apiusuario.usuario",
+    "pk": 109,
+    "fields": {
+      "password": "!",
+      "last_login": null,
+      "nombre": "Tomás",
+      "apellidoPaterno": "Reyes",
+      "apellidoMaterno": "Díaz",
+      "correo": "jugador7@seed.com",
+      "rol": "Jugador",
+      "sexo": "Masculino",
+      "fecha_nacimiento": "2001-08-25",
+      "altura": 175,
+      "peso": 73,
+      "nivelUsuario": "Amateur",
+      "entrenador": 102,
+      "is_active": true,
+      "created_at": "2026-01-03T11:00:00Z",
+      "updated_at": "2026-01-03T11:00:00Z"
+    }
+  },
+  {
+    "model": "apiusuario.usuario",
+    "pk": 110,
+    "fields": {
+      "password": "!",
+      "last_login": null,
+      "nombre": "Catalina",
+      "apellidoPaterno": "Muñoz",
+      "apellidoMaterno": "Herrera",
+      "correo": "jugadora8@seed.com",
+      "rol": "Jugador",
+      "sexo": "Femenino",
+      "fecha_nacimiento": "1997-12-05",
+      "altura": 170,
+      "peso": 65,
+      "nivelUsuario": "Semi-Pro",
+      "entrenador": 102,
+      "is_active": true,
+      "created_at": "2026-01-03T12:00:00Z",
+      "updated_at": "2026-01-03T12:00:00Z"
+    }
+  },
+  {
+    "model": "apiusuario.usuario",
+    "pk": 111,
+    "fields": {
+      "password": "!",
+      "last_login": null,
+      "nombre": "Rodrigo",
+      "apellidoPaterno": "Flores",
+      "apellidoMaterno": "Salinas",
+      "correo": "jugador9@seed.com",
+      "rol": "Jugador",
+      "sexo": "Masculino",
+      "fecha_nacimiento": "1996-05-30",
+      "altura": 183,
+      "peso": 85,
+      "nivelUsuario": "Semi-Pro",
+      "entrenador": 102,
+      "is_active": true,
+      "created_at": "2026-01-03T13:00:00Z",
+      "updated_at": "2026-01-03T13:00:00Z"
+    }
+  },
+  {
+    "model": "apiusuario.usuario",
+    "pk": 112,
+    "fields": {
+      "password": "!",
+      "last_login": null,
+      "nombre": "Javiera",
+      "apellidoPaterno": "Bravo",
+      "apellidoMaterno": "Soto",
+      "correo": "jugadora10@seed.com",
+      "rol": "Jugador",
+      "sexo": "Femenino",
+      "fecha_nacimiento": "1993-09-14",
+      "altura": 167,
+      "peso": 61,
+      "nivelUsuario": "Profesional",
+      "entrenador": 102,
+      "is_active": true,
+      "created_at": "2026-01-03T14:00:00Z",
+      "updated_at": "2026-01-03T14:00:00Z"
+    }
+  },
+  {
+    "model": "coaching.solicitudasociacion",
+    "pk": 101,
+    "fields": {
+      "jugador": 103,
+      "entrenador": 101,
+      "status": "ACEPTADA",
+      "created_at": "2026-01-02T11:00:00Z",
+      "updated_at": "2026-01-02T12:00:00Z"
+    }
+  },
+  {
+    "model": "coaching.solicitudasociacion",
+    "pk": 102,
+    "fields": {
+      "jugador": 104,
+      "entrenador": 101,
+      "status": "ACEPTADA",
+      "created_at": "2026-01-02T12:00:00Z",
+      "updated_at": "2026-01-02T13:00:00Z"
+    }
+  },
+  {
+    "model": "coaching.solicitudasociacion",
+    "pk": 103,
+    "fields": {
+      "jugador": 105,
+      "entrenador": 101,
+      "status": "ACEPTADA",
+      "created_at": "2026-01-02T13:00:00Z",
+      "updated_at": "2026-01-02T14:00:00Z"
+    }
+  },
+  {
+    "model": "coaching.solicitudasociacion",
+    "pk": 104,
+    "fields": {
+      "jugador": 106,
+      "entrenador": 101,
+      "status": "ACEPTADA",
+      "created_at": "2026-01-02T14:00:00Z",
+      "updated_at": "2026-01-02T15:00:00Z"
+    }
+  },
+  {
+    "model": "coaching.solicitudasociacion",
+    "pk": 105,
+    "fields": {
+      "jugador": 107,
+      "entrenador": 101,
+      "status": "ACEPTADA",
+      "created_at": "2026-01-02T15:00:00Z",
+      "updated_at": "2026-01-02T16:00:00Z"
+    }
+  },
+  {
+    "model": "coaching.solicitudasociacion",
+    "pk": 106,
+    "fields": {
+      "jugador": 108,
+      "entrenador": 102,
+      "status": "ACEPTADA",
+      "created_at": "2026-01-03T11:00:00Z",
+      "updated_at": "2026-01-03T12:00:00Z"
+    }
+  },
+  {
+    "model": "coaching.solicitudasociacion",
+    "pk": 107,
+    "fields": {
+      "jugador": 109,
+      "entrenador": 102,
+      "status": "ACEPTADA",
+      "created_at": "2026-01-03T12:00:00Z",
+      "updated_at": "2026-01-03T13:00:00Z"
+    }
+  },
+  {
+    "model": "coaching.solicitudasociacion",
+    "pk": 108,
+    "fields": {
+      "jugador": 110,
+      "entrenador": 102,
+      "status": "ACEPTADA",
+      "created_at": "2026-01-03T13:00:00Z",
+      "updated_at": "2026-01-03T14:00:00Z"
+    }
+  },
+  {
+    "model": "coaching.solicitudasociacion",
+    "pk": 109,
+    "fields": {
+      "jugador": 111,
+      "entrenador": 102,
+      "status": "ACEPTADA",
+      "created_at": "2026-01-03T14:00:00Z",
+      "updated_at": "2026-01-03T15:00:00Z"
+    }
+  },
+  {
+    "model": "coaching.solicitudasociacion",
+    "pk": 110,
+    "fields": {
+      "jugador": 112,
+      "entrenador": 102,
+      "status": "ACEPTADA",
+      "created_at": "2026-01-03T15:00:00Z",
+      "updated_at": "2026-01-03T16:00:00Z"
+    }
+  },
+  {
+    "model": "matches.matchdata",
+    "pk": "d1000000-0000-0000-0000-000000000001",
+    "fields": {
+      "id_local_player": 103,
+      "id_invited_player": 104,
+      "id_entrenador": 101,
+      "guest_name": null,
+      "location": "Club Las Condes",
+      "surface": "Clay",
+      "id_match_score": null,
+      "best_of": 3,
+      "match_state": "FINALIZADA",
+      "scheduled_at": "2026-05-01T10:00:00Z",
+      "created_at": "2026-04-28T10:00:00Z",
+      "updated_at": "2026-05-01T12:00:00Z"
+    }
+  },
+  {
+    "model": "matches.matchdata",
+    "pk": "d2000000-0000-0000-0000-000000000002",
+    "fields": {
+      "id_local_player": 105,
+      "id_invited_player": 106,
+      "id_entrenador": 101,
+      "guest_name": null,
+      "location": "Club Providencia",
+      "surface": "Hard",
+      "id_match_score": null,
+      "best_of": 3,
+      "match_state": "FINALIZADA",
+      "scheduled_at": "2026-05-05T15:00:00Z",
+      "created_at": "2026-05-02T10:00:00Z",
+      "updated_at": "2026-05-05T17:30:00Z"
+    }
+  },
+  {
+    "model": "matches.matchdata",
+    "pk": "d3000000-0000-0000-0000-000000000003",
+    "fields": {
+      "id_local_player": 107,
+      "id_invited_player": null,
+      "id_entrenador": 101,
+      "guest_name": "Pedro Soto",
+      "location": "Cancha Municipal Ñuñoa",
+      "surface": "Clay",
+      "id_match_score": null,
+      "best_of": 1,
+      "match_state": "FINALIZADA",
+      "scheduled_at": "2026-05-08T09:00:00Z",
+      "created_at": "2026-05-06T10:00:00Z",
+      "updated_at": "2026-05-08T10:00:00Z"
+    }
+  },
+  {
+    "model": "matches.matchdata",
+    "pk": "d4000000-0000-0000-0000-000000000004",
+    "fields": {
+      "id_local_player": 108,
+      "id_invited_player": 109,
+      "id_entrenador": 102,
+      "guest_name": null,
+      "location": "Estadio Nacional",
+      "surface": "Hard",
+      "id_match_score": null,
+      "best_of": 3,
+      "match_state": "FINALIZADA",
+      "scheduled_at": "2026-05-12T11:00:00Z",
+      "created_at": "2026-05-09T10:00:00Z",
+      "updated_at": "2026-05-12T13:30:00Z"
+    }
+  },
+  {
+    "model": "matches.matchdata",
+    "pk": "d5000000-0000-0000-0000-000000000005",
+    "fields": {
+      "id_local_player": 110,
+      "id_invited_player": 111,
+      "id_entrenador": 102,
+      "guest_name": null,
+      "location": "Club Deportivo Macul",
+      "surface": "Clay",
+      "id_match_score": null,
+      "best_of": 3,
+      "match_state": "FINALIZADA",
+      "scheduled_at": "2026-05-15T16:00:00Z",
+      "created_at": "2026-05-12T10:00:00Z",
+      "updated_at": "2026-05-15T18:00:00Z"
+    }
+  },
+  {
+    "model": "matches.matchdata",
+    "pk": "d6000000-0000-0000-0000-000000000006",
+    "fields": {
+      "id_local_player": 112,
+      "id_invited_player": null,
+      "id_entrenador": 102,
+      "guest_name": "Ana Martínez",
+      "location": "Cancha Municipal La Florida",
+      "surface": "Hard",
+      "id_match_score": null,
+      "best_of": 1,
+      "match_state": "FINALIZADA",
+      "scheduled_at": "2026-05-18T10:00:00Z",
+      "created_at": "2026-05-16T10:00:00Z",
+      "updated_at": "2026-05-18T11:30:00Z"
+    }
+  },
+  {
+    "model": "matches.matchscore",
+    "pk": "e1000000-0000-0000-0000-000000000001",
+    "fields": {
+      "id_partido": "d1000000-0000-0000-0000-000000000001",
+      "winner_id": 103,
+      "duration": 5400,
+      "created_at": "2026-05-01T10:05:00Z",
+      "updated_at": "2026-05-01T12:00:00Z"
+    }
+  },
+  {
+    "model": "matches.matchscore",
+    "pk": "e2000000-0000-0000-0000-000000000002",
+    "fields": {
+      "id_partido": "d2000000-0000-0000-0000-000000000002",
+      "winner_id": 106,
+      "duration": 4800,
+      "created_at": "2026-05-05T15:05:00Z",
+      "updated_at": "2026-05-05T17:30:00Z"
+    }
+  },
+  {
+    "model": "matches.matchscore",
+    "pk": "e3000000-0000-0000-0000-000000000003",
+    "fields": {
+      "id_partido": "d3000000-0000-0000-0000-000000000003",
+      "winner_id": 107,
+      "duration": 2400,
+      "created_at": "2026-05-08T09:05:00Z",
+      "updated_at": "2026-05-08T10:00:00Z"
+    }
+  },
+  {
+    "model": "matches.matchscore",
+    "pk": "e4000000-0000-0000-0000-000000000004",
+    "fields": {
+      "id_partido": "d4000000-0000-0000-0000-000000000004",
+      "winner_id": 108,
+      "duration": 6600,
+      "created_at": "2026-05-12T11:05:00Z",
+      "updated_at": "2026-05-12T13:30:00Z"
+    }
+  },
+  {
+    "model": "matches.matchscore",
+    "pk": "e5000000-0000-0000-0000-000000000005",
+    "fields": {
+      "id_partido": "d5000000-0000-0000-0000-000000000005",
+      "winner_id": 111,
+      "duration": 4200,
+      "created_at": "2026-05-15T16:05:00Z",
+      "updated_at": "2026-05-15T18:00:00Z"
+    }
+  },
+  {
+    "model": "matches.matchscore",
+    "pk": "e6000000-0000-0000-0000-000000000006",
+    "fields": {
+      "id_partido": "d6000000-0000-0000-0000-000000000006",
+      "winner_id": 112,
+      "duration": 2700,
+      "created_at": "2026-05-18T10:05:00Z",
+      "updated_at": "2026-05-18T11:30:00Z"
+    }
+  },
+  {
+    "model": "matches.matchset",
+    "pk": "f1010000-0000-0000-0000-000000000001",
+    "fields": {
+      "id_match_score": "e1000000-0000-0000-0000-000000000001",
+      "score_p1": 6,
+      "score_p2": 4,
+      "winner_id": 103,
+      "duration": 2700,
+      "created_at": "2026-05-01T10:05:00Z",
+      "updated_at": "2026-05-01T10:50:00Z"
+    }
+  },
+  {
+    "model": "matches.matchset",
+    "pk": "f1020000-0000-0000-0000-000000000001",
+    "fields": {
+      "id_match_score": "e1000000-0000-0000-0000-000000000001",
+      "score_p1": 6,
+      "score_p2": 3,
+      "winner_id": 103,
+      "duration": 2700,
+      "created_at": "2026-05-01T10:51:00Z",
+      "updated_at": "2026-05-01T12:00:00Z"
+    }
+  },
+  {
+    "model": "matches.matchset",
+    "pk": "f2010000-0000-0000-0000-000000000002",
+    "fields": {
+      "id_match_score": "e2000000-0000-0000-0000-000000000002",
+      "score_p1": 4,
+      "score_p2": 6,
+      "winner_id": 106,
+      "duration": 2400,
+      "created_at": "2026-05-05T15:05:00Z",
+      "updated_at": "2026-05-05T16:05:00Z"
+    }
+  },
+  {
+    "model": "matches.matchset",
+    "pk": "f2020000-0000-0000-0000-000000000002",
+    "fields": {
+      "id_match_score": "e2000000-0000-0000-0000-000000000002",
+      "score_p1": 3,
+      "score_p2": 6,
+      "winner_id": 106,
+      "duration": 2400,
+      "created_at": "2026-05-05T16:06:00Z",
+      "updated_at": "2026-05-05T17:30:00Z"
+    }
+  },
+  {
+    "model": "matches.matchset",
+    "pk": "f3010000-0000-0000-0000-000000000003",
+    "fields": {
+      "id_match_score": "e3000000-0000-0000-0000-000000000003",
+      "score_p1": 6,
+      "score_p2": 2,
+      "winner_id": 107,
+      "duration": 2400,
+      "created_at": "2026-05-08T09:05:00Z",
+      "updated_at": "2026-05-08T10:00:00Z"
+    }
+  },
+  {
+    "model": "matches.matchset",
+    "pk": "f4010000-0000-0000-0000-000000000004",
+    "fields": {
+      "id_match_score": "e4000000-0000-0000-0000-000000000004",
+      "score_p1": 6,
+      "score_p2": 3,
+      "winner_id": 108,
+      "duration": 2400,
+      "created_at": "2026-05-12T11:05:00Z",
+      "updated_at": "2026-05-12T11:45:00Z"
+    }
+  },
+  {
+    "model": "matches.matchset",
+    "pk": "f4020000-0000-0000-0000-000000000004",
+    "fields": {
+      "id_match_score": "e4000000-0000-0000-0000-000000000004",
+      "score_p1": 4,
+      "score_p2": 6,
+      "winner_id": 109,
+      "duration": 2700,
+      "created_at": "2026-05-12T11:46:00Z",
+      "updated_at": "2026-05-12T12:31:00Z"
+    }
+  },
+  {
+    "model": "matches.matchset",
+    "pk": "f4030000-0000-0000-0000-000000000004",
+    "fields": {
+      "id_match_score": "e4000000-0000-0000-0000-000000000004",
+      "score_p1": 6,
+      "score_p2": 4,
+      "winner_id": 108,
+      "duration": 1800,
+      "created_at": "2026-05-12T12:32:00Z",
+      "updated_at": "2026-05-12T13:30:00Z"
+    }
+  },
+  {
+    "model": "matches.matchset",
+    "pk": "f5010000-0000-0000-0000-000000000005",
+    "fields": {
+      "id_match_score": "e5000000-0000-0000-0000-000000000005",
+      "score_p1": 3,
+      "score_p2": 6,
+      "winner_id": 111,
+      "duration": 2100,
+      "created_at": "2026-05-15T16:05:00Z",
+      "updated_at": "2026-05-15T16:40:00Z"
+    }
+  },
+  {
+    "model": "matches.matchset",
+    "pk": "f5020000-0000-0000-0000-000000000005",
+    "fields": {
+      "id_match_score": "e5000000-0000-0000-0000-000000000005",
+      "score_p1": 4,
+      "score_p2": 6,
+      "winner_id": 111,
+      "duration": 2100,
+      "created_at": "2026-05-15T16:41:00Z",
+      "updated_at": "2026-05-15T18:00:00Z"
+    }
+  },
+  {
+    "model": "matches.matchset",
+    "pk": "f6010000-0000-0000-0000-000000000006",
+    "fields": {
+      "id_match_score": "e6000000-0000-0000-0000-000000000006",
+      "score_p1": 6,
+      "score_p2": 1,
+      "winner_id": 112,
+      "duration": 2700,
+      "created_at": "2026-05-18T10:05:00Z",
+      "updated_at": "2026-05-18T11:30:00Z"
+    }
+  }
+]

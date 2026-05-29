@@ -62,15 +62,26 @@ def calc_avg_duration_lost(points, player_id):
 
 
 def calc_break_points(points, player_id):
-    generated = [p for p in points if p.is_serving_id != player_id and p.break_point_chance]
+    if not points:
+        return {'generated': 0, 'converted': 0, 'conversion_pct': 0.0, 'faced': 0, 'saved': 0, 'save_pct': 0.0}
+
+    is_guest_match = all(p.id_player_2_id is None for p in points)
+
+    def local_is_serving(p):
+        if is_guest_match:
+            gis = getattr(p.id_game, 'guest_is_serving', None)
+            return (not gis) if gis is not None else True
+        return p.is_serving_id == player_id
+
+    generated = [p for p in points if not local_is_serving(p) and p.break_point_chance]
     converted = [p for p in generated if p.winner_id_id == player_id]
-    faced     = [p for p in points if p.is_serving_id == player_id and p.break_point_chance]
+    faced     = [p for p in points if local_is_serving(p) and p.break_point_chance]
     saved     = [p for p in faced if p.winner_id_id == player_id]
 
-    gen   = len(generated)
-    fcd   = len(faced)
-    conv  = len(converted)
-    sav   = len(saved)
+    gen  = len(generated)
+    fcd  = len(faced)
+    conv = len(converted)
+    sav  = len(saved)
 
     return {
         'generated':      gen,
@@ -250,6 +261,52 @@ def get_match_stats(points, player_id, match_score, nivel, sexo, surface):
         'quartiles':             calc_quartiles(points),
         'points_per_interval':   calc_points_per_interval(points, player_id),
         'distance_per_interval': calc_distance_per_interval(points, nivel, sexo, surface),
+    }
+
+
+def get_live_stats(points, player_id, nivel, sexo, surface):
+    return {
+        'points_win_loss':  calc_points_win_loss(points, player_id),
+        'avg_duration_won': calc_avg_duration_won(points, player_id),
+        'avg_duration_lost': calc_avg_duration_lost(points, player_id),
+        'break_points':     calc_break_points(points, player_id),
+        'total_distance':   calc_total_distance(points, nivel, sexo, surface),
+    }
+
+
+def get_live_stats_guest(points, local_player_id):
+    total = len(points)
+    guest_won  = [p for p in points if p.winner_id_id != local_player_id]
+    guest_lost = [p for p in points if p.winner_id_id == local_player_id]
+    won  = len(guest_won)
+    lost = len(guest_lost)
+
+    local_bp = calc_break_points(points, local_player_id)
+    gen  = local_bp['faced']
+    conv = local_bp['faced'] - local_bp['saved']
+    fcd  = local_bp['generated']
+    sav  = local_bp['generated'] - local_bp['converted']
+
+    won_dur  = [p.duration for p in guest_won]
+    lost_dur = [p.duration for p in guest_lost]
+
+    return {
+        'points_win_loss': {
+            'won': won, 'lost': lost, 'total': total,
+            'won_pct':  round(won  / total * 100, 1) if total else 0.0,
+            'lost_pct': round(lost / total * 100, 1) if total else 0.0,
+        },
+        'avg_duration_won':  _fmt_mmss(sum(won_dur)  // len(won_dur))  if won_dur  else None,
+        'avg_duration_lost': _fmt_mmss(sum(lost_dur) // len(lost_dur)) if lost_dur else None,
+        'break_points': {
+            'generated':      gen,
+            'converted':      conv,
+            'conversion_pct': round(conv / gen * 100, 1) if gen else 0.0,
+            'faced':          fcd,
+            'saved':          sav,
+            'save_pct':       round(sav / fcd * 100, 1) if fcd else 0.0,
+        },
+        'total_distance': None,
     }
 
 

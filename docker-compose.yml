@@ -16,6 +16,12 @@ services:
       timeout: 5s
       retries: 5
 
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+
   web:
     build: .
     ports:
@@ -25,6 +31,8 @@ services:
     environment:
       DB_HOST: db
       DB_PORT: "5432"
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
     volumes:
       - .:/app
     depends_on:
@@ -32,7 +40,7 @@ services:
         condition: service_healthy
     command: >
       sh -c "python manage.py migrate &&
-             python manage.py runserver 0.0.0.0:8000"
+             daphne -b 0.0.0.0 -p 8000 back.asgi:application"
 
 volumes:
   postgres_data:

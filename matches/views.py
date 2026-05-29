@@ -6,6 +6,8 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from apiusuario.permissions import EsEntrenador
+from notifications.services import crear_notificacion
+from notifications.models import TipoNotificacion
 from .models import MatchData, MatchScore, MatchSet, MatchPoint, MatchGame, MatchState
 from .services import (
     advance_score,
@@ -37,7 +39,7 @@ class ScheduleMatchView(APIView):
     def get(self, request):
         matches = MatchData.objects.filter(
             id_entrenador=request.user,
-            match_state__in=[MatchState.PENDIENTE, MatchState.ACEPTADO],
+            match_state__in=[MatchState.PENDIENTE, MatchState.ACEPTADO, MatchState.INICIADO, MatchState.PAUSADO],
         ).select_related('id_local_player', 'id_invited_player', 'id_entrenador').order_by('scheduled_at')
         return Response(ScheduleMatchSerializer(matches, many=True, context={'request': request}).data)
 
@@ -45,7 +47,13 @@ class ScheduleMatchView(APIView):
         serializer = ScheduleMatchSerializer(data=request.data, context={'request': request})
         if not serializer.is_valid():
             return Response({'message': 'Error al agendar el partido.', 'error': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
-        serializer.save()
+        match = serializer.save()
+        if match.id_invited_player_id:
+            crear_notificacion(
+                match.id_invited_player,
+                TipoNotificacion.PARTIDO_AGENDADO,
+                {'redirect_to': f'/matches/{match.id_match}/detail', 'meta': {'match_id': str(match.id_match), 'entrenador_nombre': request.user.nombre}},
+            )
         return Response({'message': 'Partido agendado correctamente.', 'error': None}, status=status.HTTP_201_CREATED)
 
 
@@ -61,14 +69,24 @@ class AcceptMatchView(APIView):
         if not match.id_invited_player_id:
             return Response({'error': 'Este partido no tiene jugador invitado registrado.'}, status=status.HTTP_400_BAD_REQUEST)
 
-        if match.id_invited_player_id != request.user.id:
-            return Response({'error': 'Solo el jugador invitado puede aceptar.'}, status=status.HTTP_403_FORBIDDEN)
+        invited_player = match.id_invited_player
+        is_invited = match.id_invited_player_id == request.user.id
+        is_coach_of_invited = invited_player and getattr(invited_player, 'entrenador_id', None) == request.user.id
+
+        if not is_invited and not is_coach_of_invited:
+            return Response({'error': 'Solo el jugador invitado o su entrenador pueden aceptar.'}, status=status.HTTP_403_FORBIDDEN)
 
         if match.match_state != MatchState.PENDIENTE:
             return Response({'error': f'El partido no está en estado PENDIENTE (estado actual: {match.match_state}).'}, status=status.HTTP_400_BAD_REQUEST)
 
         match.match_state = MatchState.ACEPTADO
         match.save()
+        if match.id_entrenador_id:
+            crear_notificacion(
+                match.id_entrenador,
+                TipoNotificacion.PARTIDO_ACEPTADO,
+                {'redirect_to': f'/matches/{pk}/detail', 'meta': {'match_id': str(pk)}},
+            )
         return Response(MatchDataSerializer(match).data)
 
 
@@ -90,7 +108,14 @@ class RejectMatchView(APIView):
         if match.match_state != MatchState.PENDIENTE:
             return Response({'error': f'Solo se puede rechazar un partido PENDIENTE (estado actual: {match.match_state}).'}, status=status.HTTP_400_BAD_REQUEST)
 
+        entrenador = match.id_entrenador
         match.delete()
+        if entrenador:
+            crear_notificacion(
+                entrenador,
+                TipoNotificacion.PARTIDO_RECHAZADO,
+                {'redirect_to': '/matches', 'meta': {'match_id': str(pk)}},
+            )
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
@@ -103,14 +128,8 @@ class StartMatchView(APIView):
         except MatchData.DoesNotExist:
             return Response({'error': 'Partido no encontrado.'}, status=status.HTTP_404_NOT_FOUND)
 
-        is_guest_match = match.id_invited_player_id is None
-        participant_ids = (
-            {match.id_local_player_id}
-            if is_guest_match
-            else {match.id_local_player_id, match.id_invited_player_id}
-        )
-        if request.user.id not in participant_ids:
-            return Response({'error': 'No sos participante de este partido.'}, status=status.HTTP_403_FORBIDDEN)
+        if match.id_entrenador_id != request.user.id:
+            return Response({'error': 'Solo el entrenador que creó el partido puede iniciarlo.'}, status=status.HTTP_403_FORBIDDEN)
 
         if match.match_state != MatchState.ACEPTADO:
             return Response({'error': f'El partido no está en estado ACEPTADO (estado actual: {match.match_state}).'}, status=status.HTTP_400_BAD_REQUEST)
@@ -119,7 +138,8 @@ class StartMatchView(APIView):
         if not first_server_id:
             return Response({'error': 'first_server_id es requerido.'}, status=status.HTTP_400_BAD_REQUEST)
 
-        if int(first_server_id) not in participant_ids:
+        valid_ids = {match.id_local_player_id, match.id_invited_player_id} if match.id_invited_player_id else {match.id_local_player_id}
+        if int(first_server_id) not in valid_ids:
             return Response({'error': 'El servidor inicial debe ser participante del partido.'}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
@@ -127,14 +147,23 @@ class StartMatchView(APIView):
         except Usuario.DoesNotExist:
             return Response({'error': 'Jugador no encontrado.'}, status=status.HTTP_404_NOT_FOUND)
 
+        is_guest_match = match.id_invited_player_id is None
+        first_guest_is_serving = (int(first_server_id) != match.id_local_player_id) if is_guest_match else None
+
         with transaction.atomic():
             match_score = MatchScore.objects.create(id_partido=match)
             first_set = MatchSet.objects.create(id_match_score=match_score)
-            MatchGame.objects.create(id_set=first_set, is_serving=first_server)
+            MatchGame.objects.create(id_set=first_set, is_serving=first_server, guest_is_serving=first_guest_is_serving)
             match.id_match_score = match_score
             match.match_state = MatchState.INICIADO
             match.save()
 
+        if match.id_invited_player_id:
+            crear_notificacion(
+                match.id_invited_player,
+                TipoNotificacion.PARTIDO_INICIADO,
+                {'redirect_to': f'/matches/{pk}/live', 'meta': {'match_id': str(pk)}},
+            )
         return Response(MatchDataSerializer(match).data)
 
 
@@ -147,7 +176,7 @@ class PauseMatchView(APIView):
         except MatchData.DoesNotExist:
             return Response({'error': 'Partido no encontrado.'}, status=status.HTTP_404_NOT_FOUND)
 
-        if request.user.id not in {match.id_local_player_id, match.id_invited_player_id}:
+        if request.user.id not in {match.id_local_player_id, match.id_invited_player_id} and match.id_entrenador_id != request.user.id:
             return Response({'error': 'No sos participante de este partido.'}, status=status.HTTP_403_FORBIDDEN)
 
         if match.match_state != MatchState.INICIADO:
@@ -167,7 +196,7 @@ class ResumeMatchView(APIView):
         except MatchData.DoesNotExist:
             return Response({'error': 'Partido no encontrado.'}, status=status.HTTP_404_NOT_FOUND)
 
-        if request.user.id not in {match.id_local_player_id, match.id_invited_player_id}:
+        if request.user.id not in {match.id_local_player_id, match.id_invited_player_id} and match.id_entrenador_id != request.user.id:
             return Response({'error': 'No sos participante de este partido.'}, status=status.HTTP_403_FORBIDDEN)
 
         if match.match_state != MatchState.PAUSADO:
@@ -193,7 +222,7 @@ class FinishMatchView(APIView):
             if is_guest_match
             else {match.id_local_player_id, match.id_invited_player_id}
         )
-        if request.user.id not in participant_ids:
+        if request.user.id not in participant_ids and match.id_entrenador_id != request.user.id:
             return Response({'error': 'No sos participante de este partido.'}, status=status.HTTP_403_FORBIDDEN)
 
         if match.match_state != MatchState.INICIADO:
@@ -227,6 +256,15 @@ class FinishMatchView(APIView):
             match.match_state = MatchState.FINALIZADA
             match.save()
 
+        jugadores = [match.id_local_player]
+        if match.id_invited_player_id:
+            jugadores.append(match.id_invited_player)
+        for jugador in jugadores:
+            crear_notificacion(
+                jugador,
+                TipoNotificacion.PARTIDO_FINALIZADO,
+                {'redirect_to': f'/matches/{pk}/detail', 'meta': {'match_id': str(pk)}},
+            )
         return Response(MatchDataSerializer(match).data)
 
 
@@ -242,7 +280,7 @@ class RecoverMatchView(APIView):
             return Response({'error': 'Partido no encontrado.'}, status=status.HTTP_404_NOT_FOUND)
 
         valid_ids = {match.id_local_player_id, match.id_invited_player_id} if match.id_invited_player_id else {match.id_local_player_id}
-        if request.user.id not in valid_ids:
+        if request.user.id not in valid_ids and match.id_entrenador_id != request.user.id:
             return Response({'error': 'No sos participante de este partido.'}, status=status.HTTP_403_FORBIDDEN)
 
         if match.match_state not in {MatchState.INICIADO, MatchState.PAUSADO}:
@@ -369,7 +407,7 @@ class RegisterPointView(APIView):
         is_guest_match = match.id_invited_player_id is None
         valid_ids = {match.id_local_player_id} if is_guest_match else {match.id_local_player_id, match.id_invited_player_id}
 
-        if request.user.id not in valid_ids:
+        if request.user.id not in valid_ids and match.id_entrenador_id != request.user.id:
             return Response({'error': 'No sos participante de este partido.'}, status=status.HTTP_403_FORBIDDEN)
 
         if match.match_state != MatchState.INICIADO:
@@ -446,7 +484,10 @@ class RegisterPointView(APIView):
             else:
                 new_p2, new_p1, game_over = advance_score(score_p2, score_p1)
 
-            server_is_creator = (current_game.is_serving_id == match.id_local_player_id)
+            if is_guest_match:
+                server_is_creator = not current_game.guest_is_serving
+            else:
+                server_is_creator = (current_game.is_serving_id == match.id_local_player_id)
             score_server   = score_p1 if server_is_creator else score_p2
             score_receiver = score_p2 if server_is_creator else score_p1
             receiver_won   = (winner_is_creator != server_is_creator)
@@ -496,7 +537,10 @@ class RegisterPointView(APIView):
             current_game.duration            = int((timezone.now() - current_game.created_at).total_seconds())
             current_game.p1_game_final_score = current_set.score_p1
             current_game.p2_game_final_score = current_set.score_p2
-            current_game.is_break            = (winner is None or current_game.is_serving_id != winner.id)
+            if is_guest_match:
+                current_game.is_break = (current_game.guest_is_serving == winner_is_creator)
+            else:
+                current_game.is_break = (winner is None or current_game.is_serving_id != winner.id)
             current_game.save()
 
             set_over, p1_wins_set, tiebreak = is_set_over(current_set.score_p1, current_set.score_p2)
@@ -505,7 +549,8 @@ class RegisterPointView(APIView):
                 current_set.save()
                 next_srv_id = get_next_server(current_game.is_serving_id, match.id_local_player_id, match.id_invited_player_id) or match.id_local_player_id
                 next_srv    = Usuario.objects.get(id=next_srv_id)
-                tb_game     = MatchGame.objects.create(id_set=current_set, is_serving=next_srv, is_tiebreak=True)
+                next_guest_is_serving = (not current_game.guest_is_serving) if is_guest_match else None
+                tb_game     = MatchGame.objects.create(id_set=current_set, is_serving=next_srv, is_tiebreak=True, guest_is_serving=next_guest_is_serving)
                 response_data['tiebreak_required'] = True
                 response_data['current_set']  = {'score_p1': current_set.score_p1, 'score_p2': current_set.score_p2}
                 response_data['current_game'] = {'id_game': tb_game.id_game, 'is_serving_id': next_srv_id, 'is_tiebreak': True}
@@ -515,7 +560,8 @@ class RegisterPointView(APIView):
                 current_set.save()
                 next_srv_id = get_next_server(current_game.is_serving_id, match.id_local_player_id, match.id_invited_player_id) or match.id_local_player_id
                 next_srv    = Usuario.objects.get(id=next_srv_id)
-                new_game    = MatchGame.objects.create(id_set=current_set, is_serving=next_srv)
+                next_guest_is_serving = (not current_game.guest_is_serving) if is_guest_match else None
+                new_game    = MatchGame.objects.create(id_set=current_set, is_serving=next_srv, guest_is_serving=next_guest_is_serving)
                 response_data['current_set']  = {'score_p1': current_set.score_p1, 'score_p2': current_set.score_p2}
                 response_data['current_game'] = {'id_game': new_game.id_game, 'is_serving_id': next_srv_id}
                 return Response(response_data, status=status.HTTP_201_CREATED)
@@ -539,8 +585,9 @@ class RegisterPointView(APIView):
             if not match_over:
                 next_srv_id = get_next_server(current_game.is_serving_id, match.id_local_player_id, match.id_invited_player_id) or match.id_local_player_id
                 next_srv    = Usuario.objects.get(id=next_srv_id)
+                next_guest_is_serving = (not current_game.guest_is_serving) if is_guest_match else None
                 new_set     = MatchSet.objects.create(id_match_score=match_score)
-                new_game    = MatchGame.objects.create(id_set=new_set, is_serving=next_srv)
+                new_game    = MatchGame.objects.create(id_set=new_set, is_serving=next_srv, guest_is_serving=next_guest_is_serving)
                 response_data['current_set']  = {'set_number': sets_p1 + sets_p2 + 1, 'score_p1': 0, 'score_p2': 0}
                 response_data['current_game'] = {'id_game': new_game.id_game, 'is_serving_id': next_srv_id}
                 return Response(response_data, status=status.HTTP_201_CREATED)
@@ -563,7 +610,7 @@ class UndoPointView(APIView):
         except MatchData.DoesNotExist:
             return Response({'error': 'Partido no encontrado.'}, status=status.HTTP_404_NOT_FOUND)
 
-        if request.user.id not in {match.id_local_player_id, match.id_invited_player_id}:
+        if request.user.id not in {match.id_local_player_id, match.id_invited_player_id} and match.id_entrenador_id != request.user.id:
             return Response({'error': 'No sos participante de este partido.'}, status=status.HTTP_403_FORBIDDEN)
 
         if match.match_state not in {MatchState.INICIADO, MatchState.FINALIZADA}:
@@ -663,6 +710,33 @@ class MatchSummaryView(APIView):
             .order_by('-created_at')[:5]
         )
         return Response(MatchSummarySerializer(matches, many=True).data)
+
+
+class MatchDetailView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, pk):
+        from django.db.models import Prefetch
+        try:
+            match = (
+                MatchData.objects
+                .select_related('id_local_player', 'id_invited_player', 'match_score__winner_id')
+                .prefetch_related(
+                    Prefetch('match_score__match_sets',
+                             queryset=MatchSet.objects.prefetch_related('match_games'))
+                )
+                .get(id_match=pk)
+            )
+        except MatchData.DoesNotExist:
+            return Response({'error': 'Partido no encontrado.'}, status=status.HTTP_404_NOT_FOUND)
+
+        user = request.user
+        is_participant = user.id in {match.id_local_player_id, match.id_invited_player_id}
+        is_coach = match.id_entrenador_id == user.id
+        if not is_participant and not is_coach:
+            return Response({'error': 'No tenés acceso a este partido.'}, status=status.HTTP_403_FORBIDDEN)
+
+        return Response(MatchSummarySerializer(match).data)
 
 
 class MatchDataViewSet(viewsets.ModelViewSet):
