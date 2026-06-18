@@ -1,0 +1,2 @@
+- [seed_demo command](project_seed_demo.md) — idempotent demo seeder wired into docker-compose; guest-only matches, auto_now_add backdating trick, shared password Tennis2024!
+- [Guest match conventions](guest_match_conventions.md) — how is_serving/guest_is_serving/id_player_2/winner_id work for player-vs-guest matches in matches/views.py

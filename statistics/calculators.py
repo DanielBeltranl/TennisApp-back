@@ -11,8 +11,12 @@ def _distance_params(nivel, sexo, surface):
 
 
 def _point_distance(duration_seconds, nivel, sexo, surface):
+    # point.duration is already pure ball-in-play time (no dead time between
+    # points is ever recorded) — `effective` only converts *total match
+    # clock* (which includes changeovers/pauses) into effective time, so it
+    # must not be applied again here.
     p = _distance_params(nivel, sexo, surface)
-    return duration_seconds * (p['effective'] / 100) * (p['mpm'] / 60)
+    return duration_seconds * (p['mpm'] / 60)
 
 
 def _fmt_mmss(seconds):
@@ -196,14 +200,15 @@ def _last_result(matches, player_id):
         last.id_invited_player if last.id_local_player_id == player_id
         else last.id_local_player
     )
+    opponent_data = (
+        {'id': opponent.id, 'nombre': opponent.nombre, 'apellidoPaterno': opponent.apellidoPaterno}
+        if opponent is not None
+        else {'id': None, 'nombre': last.guest_name or 'Invitado', 'apellidoPaterno': None}
+    )
     return {
         'match_id': str(last.id_match),
         'won':      last.match_score.winner_id_id == player_id,
-        'opponent': {
-            'id':              opponent.id,
-            'nombre':          opponent.nombre,
-            'apellidoPaterno': opponent.apellidoPaterno,
-        },
+        'opponent': opponent_data,
         'location': last.location,
         'surface':  last.surface,
     }
