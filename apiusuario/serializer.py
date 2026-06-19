@@ -41,6 +41,10 @@ class JugadorRegistroSerializer(serializers.ModelSerializer):
 
 class EntrenadorRegistroSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True)
+    # The model field is null/blank, so ModelSerializer would infer required=False
+    # and DRF would skip the field validator when the key is absent. Declaring it
+    # explicitly forces the field to be present for coach registration.
+    fecha_nacimiento = serializers.DateField(required=True)
 
     class Meta:
         model = Usuario
@@ -48,11 +52,6 @@ class EntrenadorRegistroSerializer(serializers.ModelSerializer):
             'nombre', 'apellidoPaterno', 'apellidoMaterno',
             'correo', 'password', 'rol', 'fecha_nacimiento',
         ]
-
-    def validate_fecha_nacimiento(self, value):
-        if not value:
-            raise serializers.ValidationError('Este campo es obligatorio para entrenadores.')
-        return value
 
     def create(self, validated_data):
         password = validated_data.pop('password')
