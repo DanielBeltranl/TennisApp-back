@@ -43,7 +43,8 @@ class MatchPointSerializer(serializers.ModelSerializer):
             'player_1', 'player_2', 'winner',
             'id_player_1', 'id_player_2', 'winner_id',
             'score_p1', 'score_p2', 'duration',
-            'break_point_chance', 'break_point', 'created_at',
+            'break_point_chance', 'break_point',
+            'match_point_p1', 'match_point_p2', 'created_at',
         ]
         read_only_fields = ['id_point', 'created_at']
 

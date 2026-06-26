@@ -141,6 +141,36 @@ def calc_quartiles(points):
     ]
 
 
+def calc_match_points(points, player_id):
+    if not points:
+        return {'generated': 0, 'converted': 0, 'conversion_pct': 0.0, 'faced': 0, 'saved': 0, 'save_pct': 0.0}
+
+    def player_has_mp(p):
+        return p.match_point_p1 if p.id_player_1_id == player_id else p.match_point_p2
+
+    def opponent_has_mp(p):
+        return p.match_point_p2 if p.id_player_1_id == player_id else p.match_point_p1
+
+    generated = [p for p in points if player_has_mp(p)]
+    converted = [p for p in generated if p.winner_id_id == player_id]
+    faced     = [p for p in points if opponent_has_mp(p)]
+    saved     = [p for p in faced if p.winner_id_id == player_id]
+
+    gen  = len(generated)
+    fcd  = len(faced)
+    conv = len(converted)
+    sav  = len(saved)
+
+    return {
+        'generated':      gen,
+        'converted':      conv,
+        'conversion_pct': round(conv / gen * 100, 1) if gen else 0.0,
+        'faced':          fcd,
+        'saved':          sav,
+        'save_pct':       round(sav / fcd * 100, 1) if fcd else 0.0,
+    }
+
+
 def calc_total_distance(points, nivel, sexo, surface):
     return round(sum(_point_distance(p.duration, nivel, sexo, surface) for p in points), 2)
 
@@ -262,6 +292,7 @@ def get_match_stats(points, player_id, match_score, nivel, sexo, surface):
         'avg_duration_won':      calc_avg_duration_won(points, player_id),
         'avg_duration_lost':     calc_avg_duration_lost(points, player_id),
         'break_points':          calc_break_points(points, player_id),
+        'match_points':          calc_match_points(points, player_id),
         'total_distance':        calc_total_distance(points, nivel, sexo, surface),
         'quartiles':             calc_quartiles(points),
         'points_per_interval':   calc_points_per_interval(points, player_id),
@@ -354,6 +385,7 @@ def get_global_stats(matches, player_id, nivel, sexo):
         'avg_duration_lost':     calc_avg_duration_lost(all_points, player_id),
         'points_win_loss':       calc_points_win_loss(all_points, player_id),
         'break_points':          calc_break_points(all_points, player_id),
+        'match_points':          calc_match_points(all_points, player_id),
         'quartiles':             calc_quartiles(all_points),
         'points_per_interval':   _avg_points_per_interval(points_by_match, match_starts, player_id, n),
         'distance_per_interval': _avg_distance_per_interval(points_by_match, match_starts, match_surface, nivel, sexo, n),

@@ -77,6 +77,27 @@ def get_tiebreak_server(initial_server_id, other_server_id, point_index):
     return initial_server_id
 
 
+def _game_would_win_set(games_a, games_b):
+    new_a = games_a + 1
+    return (new_a >= 6 and new_a - games_b >= 2) or (new_a == 7 and games_b == 6)
+
+
+def is_match_point_chance(score_a, score_b, games_a, games_b, sets_a, best_of, is_tiebreak):
+    """True if player A is one point away from winning the match."""
+    sets_to_win = (best_of + 1) // 2
+    if sets_a != sets_to_win - 1:
+        return False
+    if is_tiebreak:
+        try:
+            a, b = int(score_a), int(score_b)
+            return a >= 6 and a - b >= 1
+        except (ValueError, TypeError):
+            return False
+    return _game_would_win_set(games_a, games_b) and (
+        score_a == 'AD' or (score_a == '40' and score_b in ('0', '15', '30'))
+    )
+
+
 def is_match_over(sets_p1, sets_p2, best_of):
     """Devuelve (over, p1_wins)."""
     needed = (best_of + 1) // 2

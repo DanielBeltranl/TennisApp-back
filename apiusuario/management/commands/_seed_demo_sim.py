@@ -2,10 +2,10 @@
 
 Drives the exact same functions matches/views.py uses in production
 (advance_score, advance_tiebreak_score, is_break_point_chance, is_break_point,
-is_set_over, is_match_over, get_next_server, get_tiebreak_server) so the
-generated rows are structurally identical to what a real guest match would
-produce. Mirrors the guest-match conventions from RegisterPointView/
-FinishMatchView (matches/views.py ~122-270, ~413-620):
+is_match_point_chance, is_set_over, is_match_over, get_next_server,
+get_tiebreak_server) so the generated rows are structurally identical to what
+a real guest match would produce. Mirrors the guest-match conventions from
+RegisterPointView/FinishMatchView (matches/views.py ~122-270, ~413-620):
 
 - is_serving (MatchGame/MatchPoint) is always the local player; the real
   server is tracked via MatchGame.guest_is_serving.
@@ -24,6 +24,7 @@ from matches.services import (
     is_break_point,
     is_break_point_chance,
     is_match_over,
+    is_match_point_chance,
     is_set_over,
 )
 
@@ -68,7 +69,6 @@ class GuestMatchSimulator:
 
     def simulate(self, match_score):
         MatchSet = self.models.MatchSet
-        MatchGame = self.models.MatchGame
 
         sets_p1 = 0
         sets_p2 = 0
@@ -78,7 +78,7 @@ class GuestMatchSimulator:
         while True:
             current_set = MatchSet.objects.create(id_match_score=match_score, duration=0)
             set_duration, set_winner_is_player, guest_is_serving_next_game = self._simulate_set(
-                current_set, guest_is_serving_next_game
+                current_set, guest_is_serving_next_game, sets_p1, sets_p2
             )
             current_set.duration = set_duration
             current_set.winner_id = self.player if set_winner_is_player else None
@@ -95,7 +95,7 @@ class GuestMatchSimulator:
                 self._backdate_points()
                 return total_duration, p1_wins
 
-    def _simulate_set(self, current_set, guest_is_serving_next_game):
+    def _simulate_set(self, current_set, guest_is_serving_next_game, sets_p1, sets_p2):
         MatchGame = self.models.MatchGame
 
         games_p1 = 0
@@ -113,7 +113,9 @@ class GuestMatchSimulator:
                     id_set=current_set, is_serving=self.player,
                     guest_is_serving=guest_is_serving_next_game, is_tiebreak=True,
                 )
-                game_duration, winner_is_player = self._simulate_tiebreak_game(game, guest_is_serving_next_game)
+                game_duration, winner_is_player = self._simulate_tiebreak_game(
+                    game, guest_is_serving_next_game, sets_p1, sets_p2
+                )
                 guest_is_serving_next_game = not guest_is_serving_next_game
                 set_duration += game_duration
                 if winner_is_player:
@@ -129,7 +131,9 @@ class GuestMatchSimulator:
                 id_set=current_set, is_serving=self.player,
                 guest_is_serving=guest_is_serving_next_game, is_tiebreak=False,
             )
-            game_duration, winner_is_player = self._simulate_regular_game(game, guest_is_serving_next_game)
+            game_duration, winner_is_player = self._simulate_regular_game(
+                game, guest_is_serving_next_game, games_p1, games_p2, sets_p1, sets_p2
+            )
             guest_is_serving_next_game = not guest_is_serving_next_game
             set_duration += game_duration
             if winner_is_player:
@@ -140,7 +144,7 @@ class GuestMatchSimulator:
             game.p2_game_final_score = games_p2
             game.save(update_fields=['p1_game_final_score', 'p2_game_final_score'])
 
-    def _simulate_regular_game(self, game, guest_is_serving):
+    def _simulate_regular_game(self, game, guest_is_serving, games_p1, games_p2, sets_p1, sets_p2):
         MatchPoint = self.models.MatchPoint
 
         server_is_player = not guest_is_serving
@@ -149,6 +153,9 @@ class GuestMatchSimulator:
         game_duration = 0
 
         while True:
+            mp_p1 = is_match_point_chance(score_p1, score_p2, games_p1, games_p2, sets_p1, self.best_of, False)
+            mp_p2 = is_match_point_chance(score_p2, score_p1, games_p2, games_p1, sets_p2, self.best_of, False)
+
             player_wins_point = self._roll_point_winner(server_is_player)
             duration = _point_duration(self.rng, self.surface)
             game_duration += duration
@@ -177,6 +184,8 @@ class GuestMatchSimulator:
                 duration=duration,
                 break_point_chance=bp_chance,
                 break_point=bp,
+                match_point_p1=mp_p1,
+                match_point_p2=mp_p2,
             )
             self._all_points.append((point, duration))
 
@@ -189,7 +198,7 @@ class GuestMatchSimulator:
                 game.save()
                 return game_duration, player_wins_point
 
-    def _simulate_tiebreak_game(self, game, guest_is_serving):
+    def _simulate_tiebreak_game(self, game, guest_is_serving, sets_p1, sets_p2):
         MatchPoint = self.models.MatchPoint
 
         score_p1 = '0'
@@ -199,6 +208,11 @@ class GuestMatchSimulator:
         server_is_player = not guest_is_serving
 
         while True:
+            # games are always 6-6 in a tiebreak — is_match_point_chance ignores
+            # games when is_tiebreak=True, so passing 6/6 satisfies the signature.
+            mp_p1 = is_match_point_chance(score_p1, score_p2, 6, 6, sets_p1, self.best_of, True)
+            mp_p2 = is_match_point_chance(score_p2, score_p1, 6, 6, sets_p2, self.best_of, True)
+
             # Tiebreak server alternates every 2 points after the first (production
             # convention via get_tiebreak_server); the win-probability split follows
             # whichever side is serving this particular point.
@@ -228,6 +242,8 @@ class GuestMatchSimulator:
                 duration=duration,
                 break_point_chance=False,
                 break_point=False,
+                match_point_p1=mp_p1,
+                match_point_p2=mp_p2,
             )
             self._all_points.append((point, duration))
 

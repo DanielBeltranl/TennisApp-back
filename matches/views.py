@@ -14,6 +14,7 @@ from .services import (
     advance_tiebreak_score,
     is_break_point_chance,
     is_break_point,
+    is_match_point_chance,
     is_set_over,
     is_match_over,
     get_next_server,
@@ -477,6 +478,12 @@ class RegisterPointView(APIView):
         score_p1 = last_point.score_p1 if last_point else '0'
         score_p2 = last_point.score_p2 if last_point else '0'
 
+        sets_p1 = MatchSet.objects.filter(id_match_score=match_score, winner_id=match.id_local_player).count()
+        sets_p2 = (
+            MatchSet.objects.filter(id_match_score=match_score, winner_id=match.id_invited_player).count()
+            if match.id_invited_player_id else 0
+        )
+
         winner_is_creator = (winner is not None and winner.id == match.id_local_player_id)
 
         if current_game.is_tiebreak:
@@ -495,6 +502,8 @@ class RegisterPointView(APIView):
             point_server = Usuario.objects.get(id=tb_server_id)
             bp_chance = False
             bp = False
+            mp_p1 = is_match_point_chance(score_p1, score_p2, current_set.score_p1, current_set.score_p2, sets_p1, match.best_of, True)
+            mp_p2 = is_match_point_chance(score_p2, score_p1, current_set.score_p2, current_set.score_p1, sets_p2, match.best_of, True)
         else:
             if winner_is_creator:
                 new_p1, new_p2, game_over = advance_score(score_p1, score_p2)
@@ -511,6 +520,8 @@ class RegisterPointView(APIView):
 
             bp_chance    = is_break_point_chance(score_server, score_receiver)
             bp           = is_break_point(score_server, score_receiver, receiver_won)
+            mp_p1        = is_match_point_chance(score_p1, score_p2, current_set.score_p1, current_set.score_p2, sets_p1, match.best_of, False)
+            mp_p2        = is_match_point_chance(score_p2, score_p1, current_set.score_p2, current_set.score_p1, sets_p2, match.best_of, False)
             point_server = current_game.is_serving
 
         response_data = {
@@ -532,6 +543,8 @@ class RegisterPointView(APIView):
                 duration=int(duration),
                 break_point_chance=bp_chance,
                 break_point=bp,
+                match_point_p1=mp_p1,
+                match_point_p2=mp_p2,
             )
 
             response_data['point'] = MatchPointSerializer(point).data

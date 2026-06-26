@@ -104,6 +104,8 @@ class MatchPoint(models.Model):
     duration = models.IntegerField()
     break_point_chance = models.BooleanField()
     break_point = models.BooleanField()
+    match_point_p1 = models.BooleanField(default=False)
+    match_point_p2 = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
